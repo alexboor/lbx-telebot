@@ -58,4 +58,4 @@ jobs:
           options: |
             -u ${{ secrets.SSH_USER }}
             -e img=boorick/lbx-telebot
-            -e latest
+            -e tag=latest
