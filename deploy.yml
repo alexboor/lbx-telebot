@@ -7,15 +7,16 @@
 #      docker_image:
 #        state: absent
 #        name: '{{img}}:{{tag}}'
+#        force: force_absent
+#
+#    - name: Pull an fresh image
+#      docker_image:
+#        name: '{{img}}:{{tag}}'
 
-    - name: Pull an fresh image
-      docker_image:
-        name: '{{img}}:{{tag}}'
-        force: yes
-
-    - name: Create and run a container
+    - name: Create/Update a container
       docker_container:
         name: lbx-telebot
         image: '{{img}}:{{tag}}'
         env_file: /var/tmp/telebot.env
         recreate: yes
+        pull: true
