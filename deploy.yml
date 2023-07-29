@@ -3,14 +3,15 @@
   become: yes
 
   tasks:
-    - name: Remove existing image
-      docker_image:
-        state: absent
-        name: '{{img}}:{{tag}}'
+#    - name: Remove existing image
+#      docker_image:
+#        state: absent
+#        name: '{{img}}:{{tag}}'
 
     - name: Pull an fresh image
       docker_image:
         name: '{{img}}:{{tag}}'
+        force: yes
 
     - name: Create and run a container
       docker_container:
