@@ -14,7 +14,7 @@ def send_version(msg):
 # Handle all other messages with content_type 'text' (content_types defaults to ['text'])
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
-    bot.reply_to(message, message.text)
+    bot.reply_to(message, VERSION)
 
 
 
