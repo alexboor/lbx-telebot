@@ -22,9 +22,10 @@ jobs:
           to: ${{ secrets.NOTIFICATION_TELEGRAM_CHATID }}
           token: ${{ secrets.NOTIFICATION_TELEGRAM_TOKEN }}
           message: |
-            ${{ github.repository }} / ${{github.ref}} build and deploy on master
-            by ${{ github.actor }}
-            ${{ github.event.commits[0].message }}
+            ${{ github.repository }} build and deploy
+            Ref: ${{ github.ref }}
+            Author: ${{ github.actor }}
+            Commit: ${{ github.event.commits[0].message }}
             
 
       - name: Checkout
@@ -77,4 +78,4 @@ jobs:
           to: ${{ secrets.NOTIFICATION_TELEGRAM_CHATID }}
           token: ${{ secrets.NOTIFICATION_TELEGRAM_TOKEN }}
           message: |
-            Finished ${{github.ref}}
+            Finished ${{github.workflow}}
