@@ -22,7 +22,7 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.NOTIFICATION_TELEGRAM_TOKEN }}
           TELEGRAM_CHAT: ${{ secrets.NOTIFICATION_TELEGRAM_CHATID }}
         with:
-          - status: ${{job.status}}
+          status: ${{job.status}}
 
       - name: Checkout
         uses: actions/checkout@v3.1.0
@@ -74,4 +74,4 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.NOTIFICATION_TELEGRAM_TOKEN }}
           TELEGRAM_CHAT: ${{ secrets.NOTIFICATION_TELEGRAM_CHATID }}
         with:
-          - status: ${{job.status}}
+          status: ${{job.status}}
