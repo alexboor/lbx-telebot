@@ -21,6 +21,8 @@ jobs:
         env:
           TELEGRAM_TOKEN: ${{ secrets.NOTIFICATION_TELEGRAM_TOKEN }}
           TELEGRAM_CHAT: ${{ secrets.NOTIFICATION_TELEGRAM_CHATID }}
+        with:
+          - status: ${{job.status}}
 
       - name: Checkout
         uses: actions/checkout@v3.1.0
@@ -65,3 +67,11 @@ jobs:
             -u ${{ secrets.SSH_USER }}
             -e img=boorick/lbx-telebot
             -e tag=latest
+
+      - name: Finish notification
+        uses: Lukasss93/telegram-action@v2
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.NOTIFICATION_TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT: ${{ secrets.NOTIFICATION_TELEGRAM_CHATID }}
+        with:
+          - status: ${{job.status}}
