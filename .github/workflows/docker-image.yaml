@@ -45,3 +45,17 @@ jobs:
           push: true
           tags: boorick/lbx-telebot:latest
           labels: ${{ steps.metadata.outputs.labels }}
+
+      - name: Deploy to the server
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: deploy.yml
+          directory: ./
+          key: ${{ secrets.SSH_KEY }}
+          inventory: |
+            [all]
+            ${{ secrets.SSH_HOST }}
+          options: |
+            -u ${{ secrets.SSH_USER }}
+            -e img=boorick/lbx-telebot
+            -e latest

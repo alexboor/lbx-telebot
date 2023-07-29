@@ -1,0 +1,11 @@
+- name: Deploy playbook
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Create and run a container
+      docker_container:
+        name: lbx-telebot
+        image: '{{img}}:{{tag}}'
+        env_file: /var/tmp/telebot.env
+        recreate: yes
