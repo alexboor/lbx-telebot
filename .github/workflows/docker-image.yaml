@@ -22,7 +22,7 @@ jobs:
           to: ${{ secrets.NOTIFICATION_TELEGRAM_CHATID }}
           token: ${{ secrets.NOTIFICATION_TELEGRAM_TOKEN }}
           message: |
-            ${{ github.repository }} / ${{github.sha}} build and deploy on master
+            ${{ github.repository }} / ${{github.ref}} build and deploy on master
             by ${{ github.actor }}
             ${{ github.event.commits[0].message }}
             
@@ -77,4 +77,4 @@ jobs:
           to: ${{ secrets.NOTIFICATION_TELEGRAM_CHATID }}
           token: ${{ secrets.NOTIFICATION_TELEGRAM_TOKEN }}
           message: |
-            Finished ${{github.sha}}
+            Finished ${{github.ref}}
