@@ -27,7 +27,7 @@ def send_version(msg):
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
     if (message.chat.type == "group") and (message.chat.id in ALLOW_GROUPS):
-        handler.word_counter(message)
+        handler.word_counter(storage, message)
 
 
 bot.infinity_polling()

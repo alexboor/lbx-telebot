@@ -59,3 +59,14 @@ class Storage:
             cursor.execute(query)
         except OperationalError as e:
             print(f"error on query execution: {e}")
+
+    def count(self, uid, cid, d, v):
+        stmt = """
+        INSERT INTO word_count (user_id, chat_id, date, val)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (user_id, chat_id, date) DO UPDATE
+        SET val = word_count.val + excluded.val;
+        """
+
+        cur = self.conn.cursor()
+        cur.execute(stmt, (uid, cid, d, v))
