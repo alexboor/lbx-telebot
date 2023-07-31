@@ -7,6 +7,8 @@ API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 VERSION = "1.1.0"
 ALLOW_CHATS = [int(i) for i in os.environ.get("ALLOW_CHATS").split(",")]
 
+print(f"Allowed chats: {ALLOW_CHATS}")
+
 storage = Storage(
     os.environ.get("DB_HOST"),
     os.environ.get("DB_PORT"),

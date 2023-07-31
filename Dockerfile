@@ -10,6 +10,6 @@ COPY . .
 
 RUN python3 setup.py
 
-CMD ["python3", "main.py"]
+CMD ["python3","-u","main.py"]
 
 
