@@ -4,7 +4,7 @@ import handler
 from storage import Storage
 
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-VERSION = "1.1.2"
+VERSION = "1.1.3"
 ALLOW_CHATS = [int(i) for i in os.environ.get("ALLOW_CHATS").split(",")]
 
 print(f"Allowed chats: {ALLOW_CHATS}")
@@ -36,6 +36,8 @@ def echo_message(message):
 def listener(messages):
     for m in messages:
         print(str(m.chat.id))
+        print(m.chat.id in ALLOW_CHATS)
+        print(m)
 
 
 bot.set_update_listener(listener)
