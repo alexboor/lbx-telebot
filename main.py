@@ -4,7 +4,7 @@ import handler
 from storage import Storage
 
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 ALLOW_CHATS = [int(i) for i in os.environ.get("ALLOW_CHATS").split(",")]
 
 print(f"Allowed chats: {ALLOW_CHATS}")
@@ -32,10 +32,10 @@ def echo_message(message):
         handler.word_counter(storage, message)
 
 
-def listener(messages):
-    for m in messages:
-        print(str(m))
-
-
-bot.set_update_listener(listener)
+# def listener(messages):
+#     for m in messages:
+#         print(str(m))
+#
+#
+# bot.set_update_listener(listener)
 bot.infinity_polling()
