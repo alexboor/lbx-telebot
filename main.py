@@ -28,17 +28,14 @@ def send_version(msg):
 # Handle all other messages with content_type 'text' (content_types defaults to ['text'])
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
-    if (message.chat.type == "group") and (message.chat.id in ALLOW_CHATS):
-        print(message)
+    if ((message.chat.type == "group") or (message.chat.type == "supergroup")) and (message.chat.id in ALLOW_CHATS):
         handler.word_counter(storage, message)
 
 
-def listener(messages):
-    for m in messages:
-        print(str(m.chat.id))
-        print(m.chat.id in ALLOW_CHATS)
-        print(m)
-
-
-bot.set_update_listener(listener)
+# def listener(messages):
+#     for m in messages:
+#         print(m)
+#
+#
+# bot.set_update_listener(listener)
 bot.infinity_polling()
