@@ -30,4 +30,10 @@ def echo_message(message):
         handler.word_counter(storage, message)
 
 
+def listener(messages):
+    for m in messages:
+        print(str(m))
+
+
+bot.set_update_listener(listener)
 bot.infinity_polling()
