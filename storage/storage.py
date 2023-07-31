@@ -39,8 +39,8 @@ class Storage:
 
         stmt = """
             create table if not exists word_count (
-                user_id int,
-                chat_id int,
+                user_id bigint,
+                chat_id bigint,
                 date date,
                 val int,
                 unique (user_id, chat_id, date)

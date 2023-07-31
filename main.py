@@ -29,7 +29,6 @@ def send_version(msg):
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
     if message.chat.id in ALLOW_CHATS:
-        print(message)
         handler.word_counter(storage, message)
 
 
