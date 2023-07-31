@@ -5,7 +5,7 @@ from storage import Storage
 
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 VERSION = "1.0.3"
-ALLOW_GROUPS = [-927544591]
+ALLOW_CHATS = [int(i) for i in os.environ.get("ALLOW_CHATS").split(",")]
 
 storage = Storage(
     os.environ.get("DB_HOST"),
@@ -26,7 +26,7 @@ def send_version(msg):
 # Handle all other messages with content_type 'text' (content_types defaults to ['text'])
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
-    if (message.chat.type == "group") and (message.chat.id in ALLOW_GROUPS):
+    if (message.chat.type == "group") and (message.chat.id in ALLOW_CHATS):
         handler.word_counter(storage, message)
 
 
