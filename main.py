@@ -4,7 +4,7 @@ import handler
 from storage import Storage
 
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-VERSION = "1.1.5"
+VERSION = "1.1.6"
 ALLOW_CHATS = [int(i) for i in os.environ.get("ALLOW_CHATS").split(",")]
 
 print(f"Allowed chats: {ALLOW_CHATS}")
