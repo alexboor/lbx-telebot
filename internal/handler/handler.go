@@ -2,15 +2,19 @@ package handler
 
 import (
 	"fmt"
+	"github.com/alexboor/lbx-telebot/internal/storage"
 	"time"
 )
 
 type Handler struct {
+	Storage *storage.Storage
 }
 
 // New create and return the handler instance
-func New() (*Handler, error) {
-	h := &Handler{}
+func New(s *storage.Storage) (*Handler, error) {
+	h := &Handler{
+		Storage: s,
+	}
 
 	return h, nil
 }

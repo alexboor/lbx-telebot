@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/alexboor/lbx-telebot/internal/handler"
+	"github.com/alexboor/lbx-telebot/internal/storage"
+	"github.com/alexboor/lbx-telebot/internal/storage/postgres"
 	"golang.org/x/exp/slices" // remember to update after v21.0
 	tele "gopkg.in/telebot.v3"
 	"log"
@@ -16,6 +19,7 @@ const version = "2.0.0"
 var (
 	token      string
 	allowChats []int64
+	dsn        string
 )
 
 func init() {
@@ -32,33 +36,49 @@ func init() {
 		}
 	}
 
+	dsn = fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_NAME"),
+	)
+
 }
 
 func main() {
-	h, err := handler.New()
+	pg, err := postgres.New(dsn)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("error connection to db: %s\n", err)
+	}
+	s := storage.NewStorage(pg)
+
+	h, err := handler.New(&s)
+	if err != nil {
+		log.Fatalf("error create handler: %s\n", err)
 	}
 
-	pref := tele.Settings{
+	opts := tele.Settings{
 		Token:  token,
 		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
 	}
 
-	bot, err := tele.NewBot(pref)
+	bot, err := tele.NewBot(opts)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("error create bot instance: %s\n", err)
 	}
 
+	// Commands handlers
+	// Should not handle anything except commands in private messages
 	bot.Handle("/v", func(c tele.Context) error {
 		return c.Send(version)
 	})
 
+	// Handle only messages in allowed groups (msg.Chat.Type = "group" | "supergroup")
+	// private messages handles only by command endpoint handler
 	bot.Handle(tele.OnText, func(c tele.Context) error {
 		msg := c.Message()
 
-		// Handle only messages in allowed groups (msg.Chat.Type = "group" | "supergroup")
-		// private messages handles only by command endpoint handler
 		if (msg.Chat.Type == "group" || msg.Chat.Type == "supergroup") && slices.Contains(allowChats, msg.Chat.ID) {
 
 			// Store user profile data
