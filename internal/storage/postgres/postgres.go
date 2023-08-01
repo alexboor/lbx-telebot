@@ -46,7 +46,7 @@ func New(dsn string) (*Storage, error) {
 
 // migrate is prepare db schema
 // TODO: use normal migration
-func (s Storage) migrate() error {
+func (s *Storage) migrate() error {
 	ctx := context.TODO()
 	statements := []string{
 		`create table if not exists word_count (
