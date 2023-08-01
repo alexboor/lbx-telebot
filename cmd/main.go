@@ -53,7 +53,7 @@ func main() {
 	}
 	s := storage.NewStorage(pg)
 
-	h, err := handler.New(&s)
+	h, err := handler.New(s)
 	if err != nil {
 		log.Fatalf("error create handler: %s\n", err)
 	}
