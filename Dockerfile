@@ -1,15 +1,19 @@
-FROM python:3.11
+FROM golang:1.20-alpine as build
 
-WORKDIR /app
-
-COPY requirements.txt requirements.txt
-
-RUN pip3 install -r requirements.txt
-
+WORKDIR /build
+RUN apk add --no-cache ca-certificates git
 COPY . .
+RUN go mod vendor
+RUN go build -mod vendor -ldflags "$LD_FLAGS" -o app cmd/main.go;
 
-RUN python3 setup.py
+FROM scratch
 
-CMD ["python3","-u","main.py"]
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=build /build/app /telebot
+WORKDIR /
+ENTRYPOINT ["/telebot"]
+
+
+
 
 
