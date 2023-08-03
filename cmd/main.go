@@ -37,6 +37,9 @@ func main() {
 
 	// Commands handlers
 	// Should not handle anything except commands in private messages
+	bot.Handle("/help", h.Help)
+	bot.Handle("/h", h.Help)
+	bot.Handle("/ver", h.Ver)
 	bot.Handle("/v", h.Ver)
 
 	bot.Handle("/top", h.GetTop)

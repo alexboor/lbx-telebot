@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -30,6 +29,28 @@ func New(s storage.Storage, cfg *cfg.Cfg) (*Handler, error) {
 
 // Help handler print help text to private of requester
 func (h Handler) Help(c tele.Context) error {
+	help := `
+*Available commands:*
+
+/help or /h
+Show this help.
+
+/ver or /v
+Show the current version.
+
+/profile [name]
+Show the stored profile of the requester or another user.
+Options:
+      name - target chat participant.
+
+/top
+Show top users.
+
+/bottom
+Show reversed rating.
+`
+	c.Bot().Send(c.Sender(), help, tele.ParseMode("Markdown"))
+
 	return nil
 }
 
@@ -62,7 +83,7 @@ func (h Handler) Count(c tele.Context) error {
 
 	doc, err := prose.NewDocument(strings.ToLower(msg.Text))
 	if err != nil {
-		log.Fatal(err) // are you crazy? TODO: change to return err
+		return err
 	}
 
 	m := make(map[string]int)
