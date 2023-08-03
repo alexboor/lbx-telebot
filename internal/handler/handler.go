@@ -15,7 +15,7 @@ import (
 	tele "gopkg.in/telebot.v3"
 )
 
-const version = "2.1.0"
+const version = "2.1.1"
 
 type Handler struct {
 	Config  *cfg.Cfg
@@ -26,6 +26,11 @@ type Handler struct {
 func New(s storage.Storage, cfg *cfg.Cfg) (*Handler, error) {
 	h := &Handler{Storage: s, Config: cfg}
 	return h, nil // you cannot get error here TODO: change signature of function
+}
+
+// Help handler print help text to private of requester
+func (h Handler) Help(c tele.Context) error {
+	return nil
 }
 
 // Ver is handler for command `/ver`
