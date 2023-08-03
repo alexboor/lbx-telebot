@@ -3,8 +3,9 @@ package postgres
 import (
 	"context"
 	"errors"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
+
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type Storage struct {
@@ -13,7 +14,7 @@ type Storage struct {
 
 var ErrDSNEmpty = errors.New("empty dsn received")
 
-func New(dsn string) (*Storage, error) {
+func New(ctx context.Context, dsn string) (*Storage, error) {
 	if len(dsn) == 0 {
 		return nil, ErrDSNEmpty
 	}
@@ -25,7 +26,6 @@ func New(dsn string) (*Storage, error) {
 	}
 
 	cfg.MinConns = 3
-	ctx := context.TODO()
 	pool, err := pgxpool.ConnectConfig(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -33,34 +33,37 @@ func New(dsn string) (*Storage, error) {
 
 	log.Println("connected to postgres")
 
-	storage := &Storage{
-		Pool: pool,
-	}
+	storage := &Storage{Pool: pool}
 
-	if err := storage.migrate(); err != nil {
-		return nil, err
-	}
-
-	return storage, nil
+	return storage, storage.migrate(ctx)
 }
 
 // migrate is prepare db schema
 // TODO: use normal migration
-func (s *Storage) migrate() error {
-	ctx := context.TODO()
-	statements := []string{
-		`create table if not exists word_count (
-                user_id bigint,
-                chat_id bigint,
-                date date,
-                val int,
-                unique (user_id, chat_id, date)
-            )`,
-	}
+func (s *Storage) migrate(ctx context.Context) error {
+	// TODO: add primary key for user_id
+	queryCreateWordCount := `
+create table if not exists word_count
+(
+    user_id bigint,
+    chat_id bigint,
+    date    date,
+    val     int,
+    unique (user_id, chat_id, date)
+)`
 
+	queryCreateProfile := `
+create table if not exists profile
+(
+    id         numeric default 0  not null constraint profile_pk primary key,
+    first_name text    default '' not null,
+    last_name  text    default '' not null,
+    user_name   text    default '' not null
+)`
+
+	statements := []string{queryCreateWordCount, queryCreateProfile}
 	for _, stmt := range statements {
-		_, err := s.Pool.Exec(ctx, stmt)
-		if err != nil {
+		if _, err := s.Pool.Exec(ctx, stmt); err != nil {
 			return err
 		}
 	}
