@@ -15,7 +15,7 @@ import (
 	tele "gopkg.in/telebot.v3"
 )
 
-const version = "2.0.0"
+const version = "2.1.0"
 
 type Handler struct {
 	Config  *cfg.Cfg
