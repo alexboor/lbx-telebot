@@ -14,7 +14,7 @@ import (
 	tele "gopkg.in/telebot.v3"
 )
 
-const version = "2.1.1"
+const version = "2.2.0"
 
 type Handler struct {
 	Config  *cfg.Cfg
@@ -49,7 +49,10 @@ Show top users.
 /bottom
 Show reversed rating.
 `
-	c.Bot().Send(c.Sender(), help, tele.ParseMode("Markdown"))
+	_, err := c.Bot().Send(c.Sender(), help, tele.ParseMode("Markdown"))
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
