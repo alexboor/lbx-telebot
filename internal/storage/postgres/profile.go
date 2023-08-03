@@ -32,10 +32,11 @@ on conflict (id) do update set first_name = excluded.first_name,
 // GetTop returns top profiles with position by count in the given chat id
 func (s *Storage) GetTop(ctx context.Context, chatId int64) ([]model.Profile, error) {
 	query := `
-select p.id, p.first_name, p.last_name, p.user_name, wc.val
+select p.id, p.first_name, p.last_name, p.user_name, sum(wc.val) as cnt
 from profile p
          inner join word_count wc on p.id = wc.user_id and wc.chat_id = $1
-order by wc.val desc 
+group by p.id, p.first_name, p.last_name, p.user_name
+order by cnt desc
 limit $2`
 
 	rows, err := s.Pool.Query(ctx, query, chatId, limit)
@@ -65,10 +66,11 @@ limit $2`
 // GetBottom returns bottom profiles with position by count in given chat id
 func (s *Storage) GetBottom(ctx context.Context, chatId int64) ([]model.Profile, error) {
 	query := `
-select p.id, p.first_name, p.last_name, p.user_name, wc.val
+select p.id, p.first_name, p.last_name, p.user_name, sum(wc.val) as cnt
 from profile p
          inner join word_count wc on p.id = wc.user_id and wc.chat_id = $1
-order by wc.val
+group by p.id, p.first_name, p.last_name, p.user_name
+order by cnt
 limit $2`
 
 	rows, err := s.Pool.Query(ctx, query, chatId, limit)
@@ -104,9 +106,11 @@ limit $2`
 // GetProfileByName returns profile by given username and chat id
 func (s *Storage) GetProfileByName(ctx context.Context, userName string, chatId int64) (model.Profile, error) {
 	query := `
-select p.id, p.first_name, p.last_name, p.user_name, wc.val
+select p.id, p.first_name, p.last_name, p.user_name, sum(wc.val)
 from profile p
-         inner join word_count wc on p.id = wc.user_id and wc.chat_id = $1 and p.user_name = $2`
+         inner join word_count wc on
+    p.id = wc.user_id and wc.chat_id = $1 and p.user_name = $2
+group by p.id, p.first_name, p.last_name, p.user_name`
 
 	var p model.Profile
 	err := s.Pool.QueryRow(ctx, query, chatId, userName).Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &p.Count)
@@ -116,9 +120,11 @@ from profile p
 // GetProfileById returns profile by given user id and chat id
 func (s *Storage) GetProfileById(ctx context.Context, id, chatId int64) (model.Profile, error) {
 	query := `
-select p.id, p.first_name, p.last_name, p.user_name, wc.val
+select p.id, p.first_name, p.last_name, p.user_name, sum(wc.val)
 from profile p
-         inner join word_count wc on p.id = wc.user_id and wc.chat_id = $1 and p.id = $2`
+         inner join word_count wc on
+    p.id = wc.user_id and wc.chat_id = $1 and p.id = $2
+group by p.id, p.first_name, p.last_name, p.user_name`
 
 	var p model.Profile
 	err := s.Pool.QueryRow(ctx, query, chatId, id).Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &p.Count)
@@ -130,7 +136,7 @@ func (s *Storage) getLen(ctx context.Context, chatId int64) (int, error) {
 	query := `
 select count(*)
 from profile
-where id in (select user_id
+where id in (select distinct user_id
              from word_count
              where chat_id = $1)`
 
