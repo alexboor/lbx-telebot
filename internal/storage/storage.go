@@ -14,6 +14,7 @@ type Storage interface {
 	GetBottom(ctx context.Context, chatId int64) ([]model.Profile, error)
 	GetProfileByName(ctx context.Context, userName string, chatId int64) (model.Profile, error)
 	GetProfileById(ctx context.Context, id, chatId int64) (model.Profile, error)
+	GetProfilesByChatId(ctx context.Context, chatId int64) ([]int64, error)
 }
 
 func NewStorage(s Storage) Storage {

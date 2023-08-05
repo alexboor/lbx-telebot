@@ -144,3 +144,28 @@ where id in (select distinct user_id
 	err := s.Pool.QueryRow(ctx, query, chatId).Scan(&cnt)
 	return cnt, err
 }
+
+func (s *Storage) GetProfilesByChatId(ctx context.Context, chatId int64) ([]int64, error) {
+	query := `
+select distinct user_id
+from word_count
+where chat_id = $1`
+
+	rows, err := s.Pool.Query(ctx, query, chatId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("on scan: %v", err)
+		}
+
+		ids = append(ids, id)
+	}
+
+	return ids, rows.Err()
+}

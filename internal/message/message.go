@@ -14,7 +14,7 @@ func CreateRating(profiles []model.Profile) string {
 		if msg.Len() != 0 {
 			msg.WriteString("\n")
 		}
-		msg.WriteString(fmt.Sprintf("%v. Name: %v, Count: %v",
+		msg.WriteString(fmt.Sprintf("%v. %v: %v",
 			profile.Position, getName(profile), profile.Count))
 	}
 
@@ -23,7 +23,7 @@ func CreateRating(profiles []model.Profile) string {
 
 // CreateUserCount returns information about given profile
 func CreateUserCount(profile model.Profile) string {
-	return fmt.Sprintf("Name: %v, Count: %v", getName(profile), profile.Count)
+	return fmt.Sprintf("%v: %v", getName(profile), profile.Count)
 }
 
 // getName checks given profile and returns name
