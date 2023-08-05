@@ -38,7 +38,7 @@ func main() {
 
 	// getting information about profiles
 	for _, chatId := range config.AllowedChats {
-		profileIds, err := pg.GetProfilesByChatId(config.Ctx, chatId)
+		profileIds, err := pg.GetProfileIdsByChatId(config.Ctx, chatId)
 		if err != nil {
 			log.Printf("failed to get profile ids for chat=%v: %v", chatId, err)
 		}

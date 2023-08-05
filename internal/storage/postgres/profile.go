@@ -3,11 +3,8 @@ package postgres
 import (
 	"context"
 	"fmt"
-
 	"github.com/alexboor/lbx-telebot/internal/model"
 )
-
-const limit = 5
 
 // StoreProfile stores user data to the storage
 func (s *Storage) StoreProfile(ctx context.Context, profile model.Profile) error {
@@ -30,16 +27,29 @@ on conflict (id) do update set first_name = excluded.first_name,
 }
 
 // GetTop returns top profiles with position by count in the given chat id
-func (s *Storage) GetTop(ctx context.Context, chatId int64) ([]model.Profile, error) {
+func (s *Storage) GetTop(ctx context.Context, chatId int64, opt model.Option) ([]model.Profile, error) {
 	query := `
-select p.id, p.first_name, p.last_name, p.user_name, sum(wc.val) as cnt
-from profile p
-         inner join word_count wc on p.id = wc.user_id and wc.chat_id = $1
-group by p.id, p.first_name, p.last_name, p.user_name
+select id,
+       first_name,
+       last_name,
+       user_name,
+       (select coalesce(sum(val), 0) as cnt
+        from word_count
+        where date >= $1
+          and user_id = id
+          and chat_id = $2) as cnt
+from profile
+where id in (select user_id from word_count where chat_id = $2)
+group by id, first_name, last_name, user_name
 order by cnt desc
-limit $2`
+limit $3`
 
-	rows, err := s.Pool.Query(ctx, query, chatId, limit)
+	rows, err := s.Pool.Query(
+		ctx, query,
+		opt.Date,  // $1
+		chatId,    // $2
+		opt.Limit, // $3
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -64,16 +74,29 @@ limit $2`
 }
 
 // GetBottom returns bottom profiles with position by count in given chat id
-func (s *Storage) GetBottom(ctx context.Context, chatId int64) ([]model.Profile, error) {
+func (s *Storage) GetBottom(ctx context.Context, chatId int64, opt model.Option) ([]model.Profile, error) {
 	query := `
-select p.id, p.first_name, p.last_name, p.user_name, sum(wc.val) as cnt
-from profile p
-         inner join word_count wc on p.id = wc.user_id and wc.chat_id = $1
-group by p.id, p.first_name, p.last_name, p.user_name
+select id,
+       first_name,
+       last_name,
+       user_name,
+       (select coalesce(sum(val), 0) as cnt
+        from word_count
+        where date >= $1
+          and user_id = id
+          and chat_id = $2) as cnt
+from profile
+where id in (select user_id from word_count where chat_id = $2)
+group by id, first_name, last_name, user_name
 order by cnt
-limit $2`
+limit $3`
 
-	rows, err := s.Pool.Query(ctx, query, chatId, limit)
+	rows, err := s.Pool.Query(
+		ctx, query,
+		opt.Date,  // $1
+		chatId,    // $2
+		opt.Limit, // $3
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -104,30 +127,44 @@ limit $2`
 }
 
 // GetProfileByName returns profile by given username and chat id
-func (s *Storage) GetProfileByName(ctx context.Context, userName string, chatId int64) (model.Profile, error) {
+func (s *Storage) GetProfileByName(ctx context.Context, chatId int64, opt model.Option) (model.Profile, error) {
 	query := `
-select p.id, p.first_name, p.last_name, p.user_name, sum(wc.val)
-from profile p
-         inner join word_count wc on
-    p.id = wc.user_id and wc.chat_id = $1 and p.user_name = $2
-group by p.id, p.first_name, p.last_name, p.user_name`
+select id,
+       first_name,
+       last_name,
+       user_name,
+       (select coalesce(sum(val), 0) as cnt
+        from word_count
+        where date >= $1
+          and user_id = id
+          and chat_id = $2) as cnt
+from profile
+where user_name = $3
+group by id, first_name, last_name, user_name`
 
 	var p model.Profile
-	err := s.Pool.QueryRow(ctx, query, chatId, userName).Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &p.Count)
+	err := s.Pool.QueryRow(ctx, query, opt.Date, chatId, opt.Profile).Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &p.Count)
 	return p, err
 }
 
 // GetProfileById returns profile by given user id and chat id
-func (s *Storage) GetProfileById(ctx context.Context, id, chatId int64) (model.Profile, error) {
+func (s *Storage) GetProfileById(ctx context.Context, id, chatId int64, opt model.Option) (model.Profile, error) {
 	query := `
-select p.id, p.first_name, p.last_name, p.user_name, sum(wc.val)
-from profile p
-         inner join word_count wc on
-    p.id = wc.user_id and wc.chat_id = $1 and p.id = $2
-group by p.id, p.first_name, p.last_name, p.user_name`
+select id,
+       first_name,
+       last_name,
+       user_name,
+       (select coalesce(sum(val), 0) as cnt
+        from word_count
+        where date >= $1
+          and user_id = id
+          and chat_id = $2) as cnt
+from profile
+where id = $3
+group by id, first_name, last_name, user_name`
 
 	var p model.Profile
-	err := s.Pool.QueryRow(ctx, query, chatId, id).Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &p.Count)
+	err := s.Pool.QueryRow(ctx, query, opt.Date, chatId, id).Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &p.Count)
 	return p, err
 }
 
@@ -145,7 +182,8 @@ where id in (select distinct user_id
 	return cnt, err
 }
 
-func (s *Storage) GetProfilesByChatId(ctx context.Context, chatId int64) ([]int64, error) {
+// GetProfileIdsByChatId returns all uniq user ids for given chat id
+func (s *Storage) GetProfileIdsByChatId(ctx context.Context, chatId int64) ([]int64, error) {
 	query := `
 select distinct user_id
 from word_count

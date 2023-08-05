@@ -4,6 +4,7 @@ WORKDIR /build
 RUN apk add --no-cache ca-certificates git
 COPY . .
 RUN go mod vendor
+# TODO add testing
 RUN go build -mod vendor -ldflags "$LD_FLAGS" -o app cmd/main.go;
 
 FROM scratch
