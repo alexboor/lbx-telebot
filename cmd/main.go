@@ -6,6 +6,7 @@ import (
 
 	"github.com/alexboor/lbx-telebot/internal/cfg"
 	"github.com/alexboor/lbx-telebot/internal/handler"
+	"github.com/alexboor/lbx-telebot/internal/model"
 	"github.com/alexboor/lbx-telebot/internal/storage"
 	"github.com/alexboor/lbx-telebot/internal/storage/postgres"
 	tele "gopkg.in/telebot.v3"
@@ -33,6 +34,26 @@ func main() {
 	bot, err := tele.NewBot(opts)
 	if err != nil {
 		log.Fatalf("error create bot instance: %s\n", err)
+	}
+
+	// getting information about profiles
+	for _, chatId := range config.AllowedChats {
+		profileIds, err := pg.GetProfileIdsByChatId(config.Ctx, chatId)
+		if err != nil {
+			log.Printf("failed to get profile ids for chat=%v: %v", chatId, err)
+		}
+
+		for _, id := range profileIds {
+			profile, err := bot.ChatMemberOf(tele.ChatID(chatId), &tele.User{ID: id})
+			if err != nil {
+				log.Printf("failed to get profile info for id=%v: %v", id, err)
+			}
+
+			p := model.NewProfile(profile.User.ID, profile.User.Username, profile.User.FirstName, profile.User.LastName)
+			if err := pg.StoreProfile(config.Ctx, p); err != nil {
+				log.Printf("failed to store profile with id=%v: %v", profile.User.ID, err)
+			}
+		}
 	}
 
 	// Commands handlers

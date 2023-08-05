@@ -14,7 +14,10 @@ import (
 	tele "gopkg.in/telebot.v3"
 )
 
-const version = "2.2.1"
+const (
+	version = "2.2.1"
+	limit   = 5
+)
 
 type Handler struct {
 	Config  *cfg.Cfg
@@ -113,12 +116,17 @@ func (h Handler) GetTop(c tele.Context) error {
 		return nil
 	}
 
-	profiles, err := h.Storage.GetTop(h.Config.Ctx, msg.Chat.ID)
+	opt, ok := parseTopAndBottomPayload(msg.Payload)
+	if !ok || opt.Limit == 0 {
+		opt.Limit = limit
+	}
+
+	profiles, err := h.Storage.GetTop(h.Config.Ctx, msg.Chat.ID, opt)
 	if err != nil {
 		return fmt.Errorf("failed to get profiles")
 	}
 
-	response := message.CreateRating(profiles)
+	response := message.CreateRating(profiles, opt)
 	return c.Send(response)
 }
 
@@ -130,12 +138,17 @@ func (h Handler) GetBottom(c tele.Context) error {
 		return nil
 	}
 
-	profiles, err := h.Storage.GetBottom(h.Config.Ctx, msg.Chat.ID)
+	opt, ok := parseTopAndBottomPayload(msg.Payload)
+	if !ok || opt.Limit == 0 {
+		opt.Limit = limit
+	}
+
+	profiles, err := h.Storage.GetBottom(h.Config.Ctx, msg.Chat.ID, opt)
 	if err != nil {
 		return fmt.Errorf("failed to get profiles")
 	}
 
-	response := message.CreateRating(profiles)
+	response := message.CreateRating(profiles, opt)
 	return c.Send(response)
 }
 
@@ -153,15 +166,16 @@ func (h Handler) GetProfileCount(c tele.Context) error {
 	var profile model.Profile
 	var err error
 
-	if len(msg.Payload) == 0 {
-		profile, err = h.Storage.GetProfileById(h.Config.Ctx, msg.Sender.ID, msg.Chat.ID)
-	} else {
-		profile, err = h.Storage.GetProfileByName(h.Config.Ctx, strings.ToLower(msg.Payload), msg.Chat.ID)
+	opt, ok := parseProfilePayload(msg.Payload)
+	if (ok && len(opt.Profile) == 0) || !ok {
+		profile, err = h.Storage.GetProfileById(h.Config.Ctx, msg.Sender.ID, msg.Chat.ID, opt)
+	} else if ok && len(opt.Profile) != 0 {
+		profile, err = h.Storage.GetProfileByName(h.Config.Ctx, msg.Chat.ID, opt)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to get user")
 	}
 
-	response := message.CreateUserCount(profile)
+	response := message.CreateUserCount(profile, opt)
 	return c.Send(response)
 }

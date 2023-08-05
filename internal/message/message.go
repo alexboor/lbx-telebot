@@ -8,22 +8,39 @@ import (
 )
 
 // CreateRating returns message with information about given profiles
-func CreateRating(profiles []model.Profile) string {
-	var msg strings.Builder
+func CreateRating(profiles []model.Profile, opt model.Option) string {
+	if len(profiles) == 0 {
+		return "nothing"
+	}
+
+	var result strings.Builder
+	if !opt.Date.IsZero() {
+		result.WriteString(fmt.Sprintf("statistic since %v", opt.Date.Format("2006-01-02")))
+	}
 	for _, profile := range profiles {
-		if msg.Len() != 0 {
-			msg.WriteString("\n")
+		if result.Len() != 0 {
+			result.WriteString("\n")
 		}
-		msg.WriteString(fmt.Sprintf("%v. Name: %v, Count: %v",
+		result.WriteString(fmt.Sprintf("%v. %v: %v",
 			profile.Position, getName(profile), profile.Count))
 	}
 
-	return msg.String()
+	return result.String()
 }
 
 // CreateUserCount returns information about given profile
-func CreateUserCount(profile model.Profile) string {
-	return fmt.Sprintf("Name: %v, Count: %v", getName(profile), profile.Count)
+func CreateUserCount(profile model.Profile, opt model.Option) string {
+	if profile.Id == 0 {
+		return "nothing"
+	}
+
+	var result strings.Builder
+	result.WriteString(fmt.Sprintf("%v: %v", getName(profile), profile.Count))
+	if !opt.Date.IsZero() {
+		result.WriteString(fmt.Sprintf(" since %v", opt.Date.Format("2006-01-02")))
+	}
+
+	return result.String()
 }
 
 // getName checks given profile and returns name
