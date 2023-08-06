@@ -37,16 +37,25 @@ func main() {
 	}
 
 	// getting information about profiles
+	uniqUserIds := map[int64]struct{}{}
 	for _, chatId := range config.AllowedChats {
 		profileIds, err := pg.GetProfileIdsByChatId(config.Ctx, chatId)
 		if err != nil {
 			log.Printf("failed to get profile ids for chat=%v: %v", chatId, err)
+			continue
 		}
 
 		for _, id := range profileIds {
+			if _, ok := uniqUserIds[id]; !ok {
+				uniqUserIds[id] = struct{}{}
+			} else {
+				continue
+			}
+
 			profile, err := bot.ChatMemberOf(tele.ChatID(chatId), &tele.User{ID: id})
 			if err != nil {
 				log.Printf("failed to get profile info for id=%v: %v", id, err)
+				continue
 			}
 
 			p := model.NewProfile(profile.User.ID, profile.User.Username, profile.User.FirstName, profile.User.LastName)
@@ -55,6 +64,7 @@ func main() {
 			}
 		}
 	}
+	uniqUserIds = nil
 
 	// Commands handlers
 	// Should not handle anything except commands in private messages

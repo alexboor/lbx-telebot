@@ -117,7 +117,7 @@ func (h Handler) GetTop(c tele.Context) error {
 	}
 
 	opt, ok := parseTopAndBottomPayload(msg.Payload)
-	if !ok || opt.Limit == 0 {
+	if !ok || opt.Limit <= 0 {
 		opt.Limit = limit
 	}
 
@@ -139,7 +139,7 @@ func (h Handler) GetBottom(c tele.Context) error {
 	}
 
 	opt, ok := parseTopAndBottomPayload(msg.Payload)
-	if !ok || opt.Limit == 0 {
+	if !ok || opt.Limit <= 0 {
 		opt.Limit = limit
 	}
 
