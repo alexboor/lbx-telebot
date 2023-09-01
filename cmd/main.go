@@ -77,6 +77,7 @@ func main() {
 	bot.Handle("/top", h.GetTop)
 	bot.Handle("/bottom", h.GetBottom)
 	bot.Handle("/profile", h.GetProfileCount)
+	bot.Handle("/topic", h.SetTopic)
 
 	// Handle only messages in allowed groups (msg.Chat.Type = "group" | "supergroup")
 	// private messages handles only by command endpoint handler
