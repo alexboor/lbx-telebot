@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	version = "2.3.0"
+	version = "2.4.0"
 	limit   = 5
 )
 
@@ -46,11 +46,20 @@ Show the stored profile of the requester or another user.
 Options:
       name - target chat participant.
 
-/top
+/top [num]
 Show top users.
+Options:
+      num - custom number of positions to show
 
-/bottom
-Show reversed rating.
+/bottom [num]
+Show reversed rating
+Options:
+      num - custom number of positions to show
+
+/topic text
+Set new title in the group
+
+I live here: https://github.com/alexboor/lbx-telebot
 `
 	_, err := c.Bot().Send(c.Sender(), help, tele.ParseMode("Markdown"))
 	if err != nil {
@@ -62,7 +71,7 @@ Show reversed rating.
 
 // Ver is handler for command `/ver`
 //
-//	it's returns version to chat
+//	it returns version to chat
 func (h Handler) Ver(c tele.Context) error {
 	return c.Send(version)
 }
@@ -178,4 +187,22 @@ func (h Handler) GetProfileCount(c tele.Context) error {
 
 	response := message.CreateUserCount(profile, opt)
 	return c.Send(response)
+}
+
+// SetTopic set topic in the chat
+func (h Handler) SetTopic(c tele.Context) error {
+	msg := c.Message()
+	b := c.Bot()
+
+	if !h.IsChatAllowed(msg) {
+		return nil
+	}
+
+	if err := b.SetGroupTitle(c.Chat(), msg.Payload); err != nil {
+		return fmt.Errorf("failed to set group title: %v", err)
+	}
+
+	fmt.Printf("new title: %s dt: %s\n", msg.Payload, time.Now().Format("02-01-2006 15:04:05"))
+
+	return nil
 }
