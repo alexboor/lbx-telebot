@@ -46,11 +46,17 @@ Show the stored profile of the requester or another user.
 Options:
       name - target chat participant.
 
-/top
+/top [num]
 Show top users.
+Options:
+      num - custom number of positions to show
 
-/bottom
-Show reversed rating.
+/bottom [num]
+Show reversed rating
+Options:
+      num - custom number of positions to show
+
+I live here: https://github.com/alexboor/lbx-telebot
 `
 	_, err := c.Bot().Send(c.Sender(), help, tele.ParseMode("Markdown"))
 	if err != nil {
