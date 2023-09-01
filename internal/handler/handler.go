@@ -56,6 +56,9 @@ Show reversed rating
 Options:
       num - custom number of positions to show
 
+/topic text
+Set new title in the group
+
 I live here: https://github.com/alexboor/lbx-telebot
 `
 	_, err := c.Bot().Send(c.Sender(), help, tele.ParseMode("Markdown"))
