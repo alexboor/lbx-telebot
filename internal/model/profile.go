@@ -1,6 +1,9 @@
 package model
 
-import "strings"
+import (
+	"gopkg.in/telebot.v3"
+	"strings"
+)
 
 type Profile struct {
 	Id        int64
@@ -12,11 +15,11 @@ type Profile struct {
 }
 
 // NewProfile creates new Profile by given id, username, first name and last name
-func NewProfile(id int64, user, first, last string) Profile {
+func NewProfile(user *telebot.User) Profile {
 	return Profile{
-		Id:        id,
-		FirstName: first,
-		LastName:  last,
-		UserName:  strings.ToLower(user),
+		Id:        user.ID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		UserName:  strings.ToLower(user.Username),
 	}
 }

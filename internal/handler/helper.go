@@ -119,6 +119,10 @@ func parseDuration(str string) time.Time {
 		}
 	}
 
+	if period < 0 {
+		return time.Time{}
+	}
+
 	result = time.Now().Add(-1 * period).Truncate(time.Hour * 24)
 	return result
 }
@@ -138,4 +142,67 @@ func findIndexName(opts []string) int {
 		}
 	}
 	return -1
+}
+
+func parseEventPayload(author int64, payload string) (model.Event, bool) {
+	var result model.Event
+
+	opts := strings.Split(payload, " ")
+	if len(payload) == 0 || len(opts) == 0 {
+		return result, false
+	}
+
+	switch opts[0] {
+	case "create":
+		if len(opts) != 2 {
+			return result, false
+		}
+		result = model.NewEvent(model.EventCreate, opts[1], author)
+
+	case "close":
+		if len(opts) != 3 {
+			return result, false
+		}
+
+		evRes, err := strconv.ParseInt(opts[2], 10, 64)
+		if err != nil {
+			return result, false
+		}
+		result = model.NewEvent(model.EventClose, opts[1], author)
+		result.Result = evRes
+
+	case "show":
+		if len(opts) != 1 {
+			return result, false
+		}
+		result = model.NewEvent(model.EventShow, "", 0)
+
+	case "result":
+		if len(opts) != 2 {
+			return result, false
+		}
+		result = model.NewEvent(model.EventResult, opts[1], 0)
+
+	case "bet":
+		if len(opts) != 3 {
+			return result, false
+		}
+
+		bet, err := strconv.ParseInt(opts[2], 10, 64)
+		if err != nil {
+			return result, false
+		}
+		result = model.NewEvent(model.EventBet, opts[1], author)
+		result.Bet = bet
+
+	default:
+		return result, false
+	}
+
+	if (result.Cmd == model.EventCreate || result.Cmd == model.EventClose || result.Cmd == model.EventBet) &&
+		(len(result.Name) > 500 || len(result.Name) == 0 || result.Bet < 0) {
+		return result, false
+	}
+
+	return result, true
 }

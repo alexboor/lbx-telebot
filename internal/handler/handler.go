@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"strings"
 	"time"
 
@@ -17,6 +20,8 @@ import (
 const (
 	version = "2.4.0"
 	limit   = 5
+
+	markdownOpt = "Markdown" // TODO change to v2
 )
 
 type Handler struct {
@@ -25,48 +30,14 @@ type Handler struct {
 }
 
 // New create and return the handler instance
-func New(s storage.Storage, cfg *cfg.Cfg) (*Handler, error) {
-	h := &Handler{Storage: s, Config: cfg}
-	return h, nil // you cannot get error here TODO: change signature of function
+func New(s storage.Storage, cfg *cfg.Cfg) *Handler {
+	return &Handler{Storage: s, Config: cfg}
 }
 
 // Help handler print help text to private of requester
 func (h Handler) Help(c tele.Context) error {
-	help := `
-*Available commands:*
-
-/help or /h
-Show this help.
-
-/ver or /v
-Show the current version.
-
-/profile [name]
-Show the stored profile of the requester or another user.
-Options:
-      name - target chat participant.
-
-/top [num]
-Show top users.
-Options:
-      num - custom number of positions to show
-
-/bottom [num]
-Show reversed rating
-Options:
-      num - custom number of positions to show
-
-/topic text
-Set new title in the group
-
-I live here: https://github.com/alexboor/lbx-telebot
-`
-	_, err := c.Bot().Send(c.Sender(), help, tele.ParseMode("Markdown"))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err := c.Bot().Send(c.Sender(), message.GetHelp(), markdownOpt)
+	return err
 }
 
 // Ver is handler for command `/ver`
@@ -80,21 +51,20 @@ func (h Handler) Ver(c tele.Context) error {
 func (h Handler) Count(c tele.Context) error {
 	msg := c.Message()
 
-	if !h.IsChatAllowed(msg) {
+	if !h.IsAllowedGroup(msg) {
 		return nil
 	}
 
 	// Store user profile data
-	profile := model.NewProfile(msg.Sender.ID, msg.Sender.Username, msg.Sender.FirstName, msg.Sender.LastName)
-	err := h.Storage.StoreProfile(h.Config.Ctx, profile)
+	ctx := context.Background()
+	profile := model.NewProfile(msg.Sender)
+	err := h.Storage.StoreProfile(ctx, profile)
 	if err != nil {
 		return err
 	}
 
 	// Count message
 	dt := time.Unix(msg.Unixtime, 0)
-
-	fmt.Printf("%d %d %s: %s\n", msg.Sender.ID, msg.Chat.ID, dt, msg.Text) // todo: mb change to log.Printf?
 
 	doc, err := prose.NewDocument(strings.ToLower(msg.Text))
 	if err != nil {
@@ -110,8 +80,8 @@ func (h Handler) Count(c tele.Context) error {
 		}
 	}
 
-	if err := h.Storage.Count(h.Config.Ctx, msg.Sender.ID, msg.Chat.ID, dt, len(maps.Keys(m))); err != nil {
-		return nil // if err != nil return nil? TODO change to return err
+	if err := h.Storage.Count(ctx, msg.Sender.ID, msg.Chat.ID, dt, len(maps.Keys(m))); err != nil {
+		return err
 	}
 
 	return nil
@@ -121,7 +91,7 @@ func (h Handler) Count(c tele.Context) error {
 func (h Handler) GetTop(c tele.Context) error {
 	msg := c.Message()
 
-	if !h.IsChatAllowed(msg) {
+	if !h.IsAllowedGroup(msg) {
 		return nil
 	}
 
@@ -130,7 +100,7 @@ func (h Handler) GetTop(c tele.Context) error {
 		opt.Limit = limit
 	}
 
-	profiles, err := h.Storage.GetTop(h.Config.Ctx, msg.Chat.ID, opt)
+	profiles, err := h.Storage.GetTop(context.Background(), msg.Chat.ID, opt)
 	if err != nil {
 		return fmt.Errorf("failed to get profiles")
 	}
@@ -143,7 +113,7 @@ func (h Handler) GetTop(c tele.Context) error {
 func (h Handler) GetBottom(c tele.Context) error {
 	msg := c.Message()
 
-	if !h.IsChatAllowed(msg) {
+	if !h.IsAllowedGroup(msg) {
 		return nil
 	}
 
@@ -152,7 +122,7 @@ func (h Handler) GetBottom(c tele.Context) error {
 		opt.Limit = limit
 	}
 
-	profiles, err := h.Storage.GetBottom(h.Config.Ctx, msg.Chat.ID, opt)
+	profiles, err := h.Storage.GetBottom(context.Background(), msg.Chat.ID, opt)
 	if err != nil {
 		return fmt.Errorf("failed to get profiles")
 	}
@@ -168,18 +138,19 @@ func (h Handler) GetBottom(c tele.Context) error {
 func (h Handler) GetProfileCount(c tele.Context) error {
 	msg := c.Message()
 
-	if !h.IsChatAllowed(msg) {
+	if !h.IsAllowedGroup(msg) {
 		return nil
 	}
 
 	var profile model.Profile
 	var err error
 
+	ctx := context.Background()
 	opt, ok := parseProfilePayload(msg.Payload)
 	if (ok && len(opt.Profile) == 0) || !ok {
-		profile, err = h.Storage.GetProfileById(h.Config.Ctx, msg.Sender.ID, msg.Chat.ID, opt)
+		profile, err = h.Storage.GetProfileStatisticById(ctx, msg.Sender.ID, msg.Chat.ID, opt)
 	} else if ok && len(opt.Profile) != 0 {
-		profile, err = h.Storage.GetProfileByName(h.Config.Ctx, msg.Chat.ID, opt)
+		profile, err = h.Storage.GetProfileStatisticByName(ctx, msg.Chat.ID, opt)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to get user")
@@ -194,7 +165,7 @@ func (h Handler) SetTopic(c tele.Context) error {
 	msg := c.Message()
 	b := c.Bot()
 
-	if !h.IsChatAllowed(msg) {
+	if !h.IsAllowedGroup(msg) {
 		return nil
 	}
 
@@ -204,5 +175,177 @@ func (h Handler) SetTopic(c tele.Context) error {
 
 	fmt.Printf("new title: %s dt: %s\n", msg.Payload, time.Now().Format("02-01-2006 15:04:05"))
 
+	return nil
+}
+
+// Event is handler for /event command
+//
+//	It could have variants of payload
+//	- create with name of event
+//	- close with name of event and result
+//	- show to get all events with statuses
+//	- bet with name of event and value of bet
+//	- result to get result of closed event
+func (h Handler) Event(c tele.Context) error {
+	msg := c.Message()
+
+	// bot can check private and group messages
+	if !h.IsAllowedGroup(msg) && !h.IsAllowedChat(msg) {
+		return nil
+	}
+
+	opt, ok := parseEventPayload(msg.Sender.ID, msg.Payload)
+	if !ok {
+		_, err := c.Bot().Send(c.Sender(), message.GetEventInstruction(), markdownOpt)
+		return err
+	}
+
+	// check admin rights
+	if opt.Cmd == model.EventCreate || opt.Cmd == model.EventClose || opt.Cmd == model.EventShow {
+		var isAdmin bool
+		for _, chatId := range h.Config.AllowedChats {
+			member, err := c.Bot().ChatMemberOf(tele.ChatID(chatId), &tele.User{ID: msg.Sender.ID})
+			if err != nil {
+				continue
+			}
+			if member.Role == tele.Creator || member.Role == tele.Administrator {
+				isAdmin = true
+				break
+			}
+		}
+
+		if !isAdmin {
+			_, err := c.Bot().Send(c.Sender(), "You do not have permissions to use `/event` command", markdownOpt)
+			return err
+		}
+	}
+
+	ctx := context.Background()
+
+	// creating event
+	if opt.Cmd == model.EventCreate {
+		event, err := h.Storage.GetEventByName(ctx, opt.Name)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) { // it is okay that there are no rows with given name
+			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("checking event"), markdownOpt)
+			return err
+		}
+
+		// check existing event, it shouldn't be event with given name
+		if event.Name == opt.Name {
+			resp := fmt.Sprintf("Event with name `%v` already exists", opt.Name)
+			return c.Send(resp, markdownOpt)
+		}
+
+		// create new event in db
+		if err := h.Storage.CreateNewEvent(ctx, opt); err != nil {
+			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("creating event"), markdownOpt)
+			return err
+		}
+
+		resp := message.GetEventCreate(opt)
+		return h.sendToAll(c, resp)
+	}
+
+	// closing event
+	if opt.Cmd == model.EventClose {
+		event, err := h.Storage.GetEventByName(ctx, opt.Name)
+		if errors.Is(err, pgx.ErrNoRows) { // it is not ok that there is no event with given name in db
+			resp := fmt.Sprintf("There is no event with name %v", opt.Name)
+			return c.Send(resp, markdownOpt)
+		}
+
+		// event should be closed
+		if event.Status == model.EventStatusFinished {
+			resp := fmt.Sprintf("Event %v is already closed!", opt.Name)
+			return c.Send(resp, markdownOpt)
+		}
+
+		// getting participant for event
+		participants, err := h.Storage.GetEventParticipantByEventName(ctx, opt.Name)
+		if err != nil {
+			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("getting participants"), markdownOpt)
+			return err
+		}
+		opt.SetWinners(participants)
+
+		// update event in db
+		if err := h.Storage.CloseEvent(ctx, opt); err != nil {
+			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("closing event"), markdownOpt)
+			return err
+		}
+
+		// get profiles for winners by ids
+		if len(opt.WinnerIds) != 0 {
+			opt.WinnerProfiles, err = h.Storage.GetProfilesById(ctx, opt.WinnerIds)
+			if err != nil {
+				_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("getting winners"), markdownOpt)
+				return err
+			}
+		}
+
+		resp := message.GetEventResult(opt)
+		return h.sendToAll(c, resp)
+	}
+
+	// showing list of events
+	if opt.Cmd == model.EventShow {
+		events, err := h.Storage.GetAllEvents(ctx)
+		if err != nil {
+			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("getting list of events"), markdownOpt)
+			return err
+		}
+
+		resp := message.GetEventShow(events)
+		_, err = c.Bot().Send(c.Sender(), resp, markdownOpt)
+		return err
+	}
+
+	if opt.Cmd == model.EventResult {
+		event, err := h.Storage.GetEventByName(ctx, opt.Name)
+		if err != nil {
+			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("with getting event"), markdownOpt)
+			return err
+		}
+
+		// event should be closed
+		if event.Status != model.EventStatusFinished {
+			resp := fmt.Sprintf("Event %v is still opened", opt.Name)
+			return c.Send(resp, markdownOpt)
+		}
+
+		// check winners and get profiles by ids
+		if len(event.WinnerIds) != 0 {
+			event.WinnerProfiles, err = h.Storage.GetProfilesById(ctx, event.WinnerIds)
+			if err != nil {
+				_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("with getting winners"), markdownOpt)
+				return err
+			}
+		}
+
+		resp := message.GetEventResult(event)
+		return h.sendToAll(c, resp)
+	}
+
+	// betting value for event
+	if opt.Cmd == model.EventBet {
+		if err := h.Storage.StoreBet(ctx, opt, msg.Sender.ID); err != nil {
+			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("saving bet"), markdownOpt)
+			return err
+		}
+
+		// TODO send something that proves acceptance of bet
+	}
+
+	return nil
+}
+
+// sendToAll sends message to all allowed groups or chats
+func (h Handler) sendToAll(c tele.Context, msg string) error {
+	for _, chatId := range h.Config.AllowedChats {
+		_, err := c.Bot().Send(&tele.Chat{ID: chatId}, msg, markdownOpt)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

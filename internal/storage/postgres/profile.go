@@ -126,8 +126,8 @@ limit $3`
 	return profiles, rows.Err()
 }
 
-// GetProfileByName returns profile by given username and chat id
-func (s *Storage) GetProfileByName(ctx context.Context, chatId int64, opt model.Option) (model.Profile, error) {
+// GetProfileStatisticByName returns profile by given username and chat id
+func (s *Storage) GetProfileStatisticByName(ctx context.Context, chatId int64, opt model.Option) (model.Profile, error) {
 	query := `
 select id,
        first_name,
@@ -147,8 +147,8 @@ group by id, first_name, last_name, user_name`
 	return p, err
 }
 
-// GetProfileById returns profile by given user id and chat id
-func (s *Storage) GetProfileById(ctx context.Context, id, chatId int64, opt model.Option) (model.Profile, error) {
+// GetProfileStatisticById returns profile by given user id and chat id
+func (s *Storage) GetProfileStatisticById(ctx context.Context, id, chatId int64, opt model.Option) (model.Profile, error) {
 	query := `
 select id,
        first_name,
@@ -168,18 +168,48 @@ group by id, first_name, last_name, user_name`
 	return p, err
 }
 
-// getLen returns number of profiles in database by given chat id
-func (s *Storage) getLen(ctx context.Context, chatId int64) (int, error) {
+// GetProfileById returns pure profile by given id of profile
+func (s *Storage) GetProfileById(ctx context.Context, id int64) (model.Profile, error) {
 	query := `
-select count(*)
+select id, first_name, last_name, user_name
 from profile
-where id in (select distinct user_id
-             from word_count
-             where chat_id = $1)`
+where id = $1`
 
-	var cnt int
-	err := s.Pool.QueryRow(ctx, query, chatId).Scan(&cnt)
-	return cnt, err
+	var p model.Profile
+	err := s.Pool.QueryRow(ctx, query, id).Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName)
+	return p, err
+}
+
+// GetProfilesById returns pure profiles by given id of profiles
+func (s *Storage) GetProfilesById(ctx context.Context, ids []int64) ([]model.Profile, error) {
+	query := `
+select id, first_name, last_name, user_name
+from profile
+where id = any($1)`
+
+	rows, err := s.Pool.Query(ctx, query, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []model.Profile
+	for rows.Next() {
+		var profile model.Profile
+		err := rows.Scan(
+			&profile.Id,
+			&profile.FirstName,
+			&profile.LastName,
+			&profile.UserName,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("on scan: %v", err)
+		}
+
+		result = append(result, profile)
+	}
+
+	return result, rows.Err()
 }
 
 // GetProfileIdsByChatId returns all uniq user ids for given chat id
@@ -206,4 +236,18 @@ where chat_id = $1`
 	}
 
 	return ids, rows.Err()
+}
+
+// getLen returns number of profiles in database by given chat id
+func (s *Storage) getLen(ctx context.Context, chatId int64) (int, error) {
+	query := `
+select count(*)
+from profile
+where id in (select distinct user_id
+             from word_count
+             where chat_id = $1)`
+
+	var cnt int
+	err := s.Pool.QueryRow(ctx, query, chatId).Scan(&cnt)
+	return cnt, err
 }
