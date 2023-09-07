@@ -12,11 +12,15 @@ type Storage interface {
 	StoreProfile(ctx context.Context, profile model.Profile) error
 	GetTop(ctx context.Context, chatId int64, opt model.Option) ([]model.Profile, error)
 	GetBottom(ctx context.Context, chatId int64, opt model.Option) ([]model.Profile, error)
-	GetProfileByName(ctx context.Context, chatId int64, opt model.Option) (model.Profile, error)
-	GetProfileById(ctx context.Context, id, chatId int64, opt model.Option) (model.Profile, error)
+	GetProfileStatisticByName(ctx context.Context, chatId int64, opt model.Option) (model.Profile, error)
+	GetProfileStatisticById(ctx context.Context, id, chatId int64, opt model.Option) (model.Profile, error)
 	GetProfileIdsByChatId(ctx context.Context, chatId int64) ([]int64, error)
-}
-
-func NewStorage(s Storage) Storage {
-	return s
+	GetEventByName(ctx context.Context, name string) (model.Event, error)
+	CreateNewEvent(ctx context.Context, event model.Event) error
+	GetEventParticipantByEventName(ctx context.Context, name string) ([]model.Participant, error)
+	CloseEvent(ctx context.Context, event model.Event) error
+	GetProfilesById(ctx context.Context, ids []int64) ([]model.Profile, error)
+	GetProfileById(ctx context.Context, id int64) (model.Profile, error)
+	GetAllEvents(ctx context.Context) ([]model.Event, error)
+	StoreBet(ctx context.Context, event model.Event, userId int64) error
 }

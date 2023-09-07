@@ -3,6 +3,8 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/alexboor/lbx-telebot/internal/storage/postgres/migration"
 	"log"
 
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -41,30 +43,9 @@ func New(ctx context.Context, dsn string) (*Storage, error) {
 // migrate is prepare db schema
 // TODO: use normal migration
 func (s *Storage) migrate(ctx context.Context) error {
-	// TODO: add primary key for user_id
-	queryCreateWordCount := `
-create table if not exists word_count
-(
-    user_id bigint,
-    chat_id bigint,
-    date    date,
-    val     int,
-    unique (user_id, chat_id, date)
-)`
-
-	queryCreateProfile := `
-create table if not exists profile
-(
-    id         numeric default 0  not null constraint profile_pk primary key,
-    first_name text    default '' not null,
-    last_name  text    default '' not null,
-    user_name   text    default '' not null
-)`
-
-	statements := []string{queryCreateWordCount, queryCreateProfile}
-	for _, stmt := range statements {
+	for _, stmt := range migration.Migrations {
 		if _, err := s.Pool.Exec(ctx, stmt); err != nil {
-			return err
+			return fmt.Errorf("failed to make migration: %v", err)
 		}
 	}
 

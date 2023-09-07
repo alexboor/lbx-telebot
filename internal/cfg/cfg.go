@@ -1,7 +1,6 @@
 package cfg
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
@@ -10,7 +9,6 @@ import (
 )
 
 type Cfg struct {
-	Ctx          context.Context
 	Token        string
 	AllowedChats []int64
 	Dsn          string
@@ -19,7 +17,6 @@ type Cfg struct {
 // New creates new app config
 func New() *Cfg {
 	return &Cfg{
-		Ctx:          context.Background(),
 		Token:        os.Getenv("TELEGRAM_BOT_TOKEN"),
 		AllowedChats: initAllowedChats(),
 		Dsn:          initDsn(),
