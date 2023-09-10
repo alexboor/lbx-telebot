@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"time"
 
 	"github.com/alexboor/lbx-telebot/internal/cfg"
@@ -13,6 +14,11 @@ import (
 )
 
 func main() {
+	cfg.InitLogger()
+
+	slog.Info("starting...")
+	defer slog.Info("finished")
+
 	config := cfg.New()
 	ctx := context.Background()
 
@@ -41,7 +47,8 @@ func main() {
 	for _, chatId := range config.AllowedChats {
 		profileIds, err := pg.GetProfileIdsByChatId(ctx, chatId)
 		if err != nil {
-			log.Printf("failed to get profile ids for chat=%v: %v", chatId, err)
+			slog.Error("failed to get profile ids for chat",
+				slog.Any("chat", chatId), slog.Any("error", err))
 			continue
 		}
 
@@ -54,13 +61,15 @@ func main() {
 
 			profile, err := bot.ChatMemberOf(tele.ChatID(chatId), &tele.User{ID: id})
 			if err != nil {
-				log.Printf("failed to get profile info for id=%v: %v", id, err)
+				slog.Error("failed to get profile info for id",
+					slog.Any("id", id), slog.Any("error", err))
 				continue
 			}
 
 			p := model.NewProfile(profile.User)
 			if err := pg.StoreProfile(ctx, p); err != nil {
-				log.Printf("failed to store profile with id=%v: %v", profile.User.ID, err)
+				slog.Error("failed to store profile with id",
+					slog.Any("id", profile.User.ID), slog.Any("error", err))
 			}
 		}
 	}
@@ -84,6 +93,6 @@ func main() {
 	// private messages handles only by command endpoint handler
 	bot.Handle(tele.OnText, h.Count)
 
-	log.Println("up and listen")
+	slog.Info("up and listen")
 	bot.Start()
 }
