@@ -2,7 +2,7 @@ package cfg
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -23,6 +23,12 @@ func New() *Cfg {
 	}
 }
 
+func InitLogger() {
+	opts := &slog.HandlerOptions{AddSource: true, Level: slog.LevelInfo}
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	slog.SetDefault(logger)
+}
+
 // initAllowedChats reads env ALLOW_CHATS, split value by `,` and parses it from string to int
 func initAllowedChats() []int64 {
 	var result []int64
@@ -32,7 +38,7 @@ func initAllowedChats() []int64 {
 		if len(chat) > 0 {
 			id, err := strconv.ParseInt(chat, 10, 64)
 			if err != nil {
-				log.Printf("warning: parse ALLOW_CHATS env error: %s\n", err)
+				slog.Warn("failed to parse ALLOW_CHATS env", slog.Any("error", err))
 			}
 
 			result = append(result, id)

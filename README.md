@@ -19,3 +19,6 @@ Show top users.
 
 `/bottom`
 Show reversed rating.
+
+`/event`
+Show detailed information about events
