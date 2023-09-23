@@ -2,15 +2,14 @@ package main
 
 import (
 	"context"
-	"log"
-	"log/slog"
-	"time"
-
+	"github.com/alexboor/lbx-telebot/internal"
 	"github.com/alexboor/lbx-telebot/internal/cfg"
 	"github.com/alexboor/lbx-telebot/internal/handler"
 	"github.com/alexboor/lbx-telebot/internal/model"
 	"github.com/alexboor/lbx-telebot/internal/storage/postgres"
 	tele "gopkg.in/telebot.v3"
+	"log"
+	"log/slog"
 )
 
 func main() {
@@ -34,7 +33,7 @@ func main() {
 
 	opts := tele.Settings{
 		Token:  config.Token,
-		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
+		Poller: &tele.LongPoller{Timeout: internal.Timeout},
 	}
 
 	bot, err := tele.NewBot(opts)
@@ -77,17 +76,20 @@ func main() {
 
 	// Commands handlers
 	// Should not handle anything except commands in private messages
-	bot.Handle("/help", h.Help)
-	bot.Handle("/h", h.Help)
-	bot.Handle("/start", h.Help)
-	bot.Handle("/ver", h.Ver)
-	bot.Handle("/v", h.Ver)
+	bot.Handle(internal.HelpCmd, h.Help)
+	bot.Handle(internal.HCmd, h.Help)
+	bot.Handle(internal.StartCmd, h.Help)
+	bot.Handle(internal.VerCmd, h.Ver)
+	bot.Handle(internal.VCmd, h.Ver)
 
-	bot.Handle("/top", h.GetTop)
-	bot.Handle("/bottom", h.GetBottom)
-	bot.Handle("/profile", h.GetProfileCount)
-	bot.Handle("/topic", h.SetTopic)
-	bot.Handle("/event", h.Event)
+	bot.Handle(internal.TopCmd, h.GetTop)
+	bot.Handle(internal.BottomCmd, h.GetBottom)
+	bot.Handle(internal.ProfileCmd, h.GetProfileCount)
+	bot.Handle(internal.TopicCmd, h.SetTopic)
+	bot.Handle(internal.EventCmd, h.EventCmd)
+
+	// Button handlers
+	bot.Handle("\f"+internal.ShareBtn, h.EventCallback)
 
 	// Handle only messages in allowed groups (msg.Chat.Type = "group" | "supergroup")
 	// private messages handles only by command endpoint handler
