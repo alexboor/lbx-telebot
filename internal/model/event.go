@@ -14,6 +14,7 @@ const (
 	EventShow
 	EventBet
 	EventResult
+	EventShare
 )
 
 type (

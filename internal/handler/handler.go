@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v4"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,7 +41,7 @@ func (h Handler) Help(c tele.Context) error {
 	return err
 }
 
-// Ver is handler for command `/ver`
+// Ver is handler for command internal.VerCmd
 //
 //	it returns version to chat
 func (h Handler) Ver(c tele.Context) error {
@@ -87,7 +88,7 @@ func (h Handler) Count(c tele.Context) error {
 	return nil
 }
 
-// GetTop is handler for `/top` command, it returns top profiles by count
+// GetTop is handler for internal.TopCmd command, it returns top profiles by count
 func (h Handler) GetTop(c tele.Context) error {
 	msg := c.Message()
 
@@ -109,7 +110,7 @@ func (h Handler) GetTop(c tele.Context) error {
 	return c.Send(response)
 }
 
-// GetBottom is handler for `/bottom` command, it returns bottom profiles by count
+// GetBottom is handler for internal.BottomCmd command, it returns bottom profiles by count
 func (h Handler) GetBottom(c tele.Context) error {
 	msg := c.Message()
 
@@ -131,7 +132,7 @@ func (h Handler) GetBottom(c tele.Context) error {
 	return c.Send(response)
 }
 
-// GetProfileCount is handler for `/profile` command
+// GetProfileCount is handler for internal.ProfileCmd command
 //
 //	if payload is set then handler returns profile information about username in payload
 //	otherwise returns information about sender
@@ -178,7 +179,7 @@ func (h Handler) SetTopic(c tele.Context) error {
 	return nil
 }
 
-// Event is handler for /event command
+// EventCmd is handler for internal.EventCmd command
 //
 //	It could have variants of payload
 //	- create with name of event
@@ -186,7 +187,8 @@ func (h Handler) SetTopic(c tele.Context) error {
 //	- show to get all events with statuses
 //	- bet with name of event and value of bet
 //	- result to get result of closed event
-func (h Handler) Event(c tele.Context) error {
+//	- share to send event to administered group or channel
+func (h Handler) EventCmd(c tele.Context) error {
 	msg := c.Message()
 
 	// bot can check private and group messages
@@ -200,8 +202,10 @@ func (h Handler) Event(c tele.Context) error {
 		return err
 	}
 
+	administeredGroup := map[int64]string{}
 	// check admin rights
-	if opt.Cmd == model.EventCreate || opt.Cmd == model.EventClose || opt.Cmd == model.EventShow {
+	if opt.Cmd == model.EventCreate || opt.Cmd == model.EventClose || opt.Cmd == model.EventShow ||
+		opt.Cmd == model.EventShare {
 		var isAdmin bool
 		for _, chatId := range h.Config.AllowedChats {
 			member, err := c.Bot().ChatMemberOf(tele.ChatID(chatId), &tele.User{ID: msg.Sender.ID})
@@ -209,8 +213,12 @@ func (h Handler) Event(c tele.Context) error {
 				continue
 			}
 			if member.Role == tele.Creator || member.Role == tele.Administrator {
+				chat, err := c.Bot().ChatByID(chatId)
+				if err != nil {
+					continue
+				}
+				administeredGroup[chatId] = chat.Title
 				isAdmin = true
-				break
 			}
 		}
 
@@ -243,7 +251,7 @@ func (h Handler) Event(c tele.Context) error {
 		}
 
 		resp := message.GetEventCreate(opt)
-		return h.sendToAll(c, resp)
+		return c.Send(resp)
 	}
 
 	// closing event
@@ -284,7 +292,7 @@ func (h Handler) Event(c tele.Context) error {
 		}
 
 		resp := message.GetEventResult(opt)
-		return h.sendToAll(c, resp)
+		return c.Send(resp)
 	}
 
 	// showing list of events
@@ -323,7 +331,7 @@ func (h Handler) Event(c tele.Context) error {
 		}
 
 		resp := message.GetEventResult(event)
-		return h.sendToAll(c, resp)
+		return c.Send(resp)
 	}
 
 	// betting value for event
@@ -336,16 +344,46 @@ func (h Handler) Event(c tele.Context) error {
 		// TODO send something that proves acceptance of bet
 	}
 
+	// send message for sharing event to group or channel
+	if opt.Cmd == model.EventShare {
+		resp, keyboard := message.GetEventShareKeyboard(opt.Name, administeredGroup)
+		_, err := c.Bot().Send(c.Sender(), resp, keyboard)
+		return err
+	}
+
 	return nil
 }
 
-// sendToAll sends message to all allowed groups or chats
-func (h Handler) sendToAll(c tele.Context, msg string) error {
-	for _, chatId := range h.Config.AllowedChats {
-		_, err := c.Bot().Send(&tele.Chat{ID: chatId}, msg, markdownOpt)
-		if err != nil {
-			return err
-		}
+// EventCallback is handler for internal.ShareBtn callback. It sends event to chosen group
+func (h Handler) EventCallback(c tele.Context) error {
+	data := strings.Split(c.Data(), " ")
+	if len(data) != 2 {
+		return fmt.Errorf("failed to get event callback data, callback=%v", data)
 	}
-	return nil
+	eventName := data[0]
+	chatId, err := strconv.ParseInt(data[1], 10, 64)
+	if err != nil || len(data[1]) < 2 {
+		return fmt.Errorf("failed to get chat_id in event callback, chat_id=%v", data[1])
+	}
+
+	event, err := h.Storage.GetEventByName(context.Background(), eventName)
+	if err != nil {
+		_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("getting event"), markdownOpt)
+		return err
+	}
+
+	resp := message.GetEventShare(event)
+	_, err = c.Bot().Send(&tele.Chat{ID: chatId}, resp, markdownOpt)
+	if err != nil {
+		_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("sharing event"), markdownOpt)
+		return err
+	}
+
+	err = c.Delete()
+	if err != nil {
+		return err
+	}
+
+	_, err = c.Bot().Send(c.Sender(), "event shared", markdownOpt)
+	return err
 }

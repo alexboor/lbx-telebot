@@ -183,6 +183,12 @@ func parseEventPayload(author int64, payload string) (model.Event, bool) {
 		}
 		result = model.NewEvent(model.EventResult, opts[1], 0)
 
+	case "share":
+		if len(opts) != 2 {
+			return result, false
+		}
+		result = model.NewEvent(model.EventShare, opts[1], 0)
+
 	case "bet":
 		if len(opts) != 3 {
 			return result, false
