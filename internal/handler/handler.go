@@ -106,8 +106,8 @@ func (h Handler) GetTop(c tele.Context) error {
 		return fmt.Errorf("failed to get profiles")
 	}
 
-	response := message.CreateRating(profiles, opt)
-	return c.Send(response)
+	resp := message.CreateRating(profiles, opt)
+	return c.Send(resp)
 }
 
 // GetBottom is handler for internal.BottomCmd command, it returns bottom profiles by count
@@ -207,6 +207,7 @@ func (h Handler) EventCmd(c tele.Context) error {
 	if opt.Cmd == model.EventCreate || opt.Cmd == model.EventClose || opt.Cmd == model.EventShow ||
 		opt.Cmd == model.EventShare {
 		var isAdmin bool
+
 		for _, chatId := range h.Config.AllowedChats {
 			member, err := c.Bot().ChatMemberOf(tele.ChatID(chatId), &tele.User{ID: msg.Sender.ID})
 			if err != nil {
@@ -251,7 +252,7 @@ func (h Handler) EventCmd(c tele.Context) error {
 		}
 
 		resp := message.GetEventCreate(opt)
-		return c.Send(resp)
+		return c.Send(resp, markdownOpt)
 	}
 
 	// closing event
@@ -262,7 +263,7 @@ func (h Handler) EventCmd(c tele.Context) error {
 			return c.Send(resp, markdownOpt)
 		}
 
-		// event should be closed
+		// event should not be closed
 		if event.Status == model.EventStatusFinished {
 			resp := fmt.Sprintf("Event %v is already closed!", opt.Name)
 			return c.Send(resp, markdownOpt)
@@ -292,7 +293,7 @@ func (h Handler) EventCmd(c tele.Context) error {
 		}
 
 		resp := message.GetEventResult(opt)
-		return c.Send(resp)
+		return c.Send(resp, markdownOpt)
 	}
 
 	// showing list of events
@@ -309,7 +310,7 @@ func (h Handler) EventCmd(c tele.Context) error {
 	}
 
 	if opt.Cmd == model.EventResult {
-		event, err := h.Storage.GetEventByName(ctx, opt.Name)
+		event, err := h.Storage.GetEventWithWinnersByName(ctx, opt.Name)
 		if err != nil {
 			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("with getting event"), markdownOpt)
 			return err
@@ -321,17 +322,8 @@ func (h Handler) EventCmd(c tele.Context) error {
 			return c.Send(resp, markdownOpt)
 		}
 
-		// check winners and get profiles by ids
-		if len(event.WinnerIds) != 0 {
-			event.WinnerProfiles, err = h.Storage.GetProfilesById(ctx, event.WinnerIds)
-			if err != nil {
-				_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("with getting winners"), markdownOpt)
-				return err
-			}
-		}
-
 		resp := message.GetEventResult(event)
-		return c.Send(resp)
+		return c.Send(resp, markdownOpt)
 	}
 
 	// betting value for event
@@ -366,7 +358,7 @@ func (h Handler) EventCallback(c tele.Context) error {
 		return fmt.Errorf("failed to get chat_id in event callback, chat_id=%v", data[1])
 	}
 
-	event, err := h.Storage.GetEventByName(context.Background(), eventName)
+	event, err := h.Storage.GetEventWithWinnersByName(context.Background(), eventName)
 	if err != nil {
 		_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("getting event"), markdownOpt)
 		return err

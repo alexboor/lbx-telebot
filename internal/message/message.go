@@ -106,17 +106,26 @@ func GetEventShareKeyboard(eventName string, groups map[int64]string) (string, *
 // GetEventShare returns message for `share` callback
 func GetEventShare(event model.Event) string {
 	var msg strings.Builder
-	msg.WriteString(fmt.Sprintf("Event `%v` has been started!\n", event.Name))
-	msg.WriteString("Ladies and gentlemen place your bets!\n")
-	msg.WriteString(fmt.Sprintf("To place your bet type \n`/event bet %v value`\n", event.Name))
-	msg.WriteString("Where value is your bet. It should be integer.")
+
+	switch event.Status {
+
+	case model.EventStatusOpened:
+		msg.WriteString(fmt.Sprintf("Event `%v` has been started!\n", event.Name))
+		msg.WriteString("Ladies and gentlemen place your bets!\n")
+		msg.WriteString(fmt.Sprintf("To place your bet type \n`/event bet %v value`\n", event.Name))
+		msg.WriteString("Where value is your bet. It should be integer.")
+
+	case model.EventStatusFinished:
+		msg.WriteString(GetEventResult(event))
+	}
+
 	return msg.String()
 }
 
 // GetEventResult returns message for `/event result` and `/event close` commands
 func GetEventResult(event model.Event) string {
 	var msg strings.Builder
-	msg.WriteString(fmt.Sprintf("Event `%v` is closed!\n", event.Name))
+	msg.WriteString(fmt.Sprintf("Event `%v` is closed with result `%v`!\n", event.Name, event.Result))
 
 	switch len(event.WinnerProfiles) {
 	case 0:

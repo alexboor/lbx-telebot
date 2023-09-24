@@ -164,3 +164,19 @@ where name = $1`
 
 	return event, nil
 }
+
+func (s *Storage) GetEventWithWinnersByName(ctx context.Context, name string) (model.Event, error) {
+	event, err := s.GetEventByName(ctx, name)
+	if err != nil {
+		return model.Event{}, fmt.Errorf("failed to get event by name=%v: %v", name, err)
+	}
+
+	if len(event.WinnerIds) != 0 {
+		event.WinnerProfiles, err = s.GetProfilesById(ctx, event.WinnerIds)
+		if err != nil {
+			return model.Event{}, fmt.Errorf("failed to get winners for event with name=%v: %v", event.Name, err)
+		}
+	}
+
+	return event, nil
+}

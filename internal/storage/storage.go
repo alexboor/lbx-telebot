@@ -16,6 +16,7 @@ type Storage interface {
 	GetProfileStatisticById(ctx context.Context, id, chatId int64, opt model.Option) (model.Profile, error)
 	GetProfileIdsByChatId(ctx context.Context, chatId int64) ([]int64, error)
 	GetEventByName(ctx context.Context, name string) (model.Event, error)
+	GetEventWithWinnersByName(ctx context.Context, name string) (model.Event, error)
 	CreateNewEvent(ctx context.Context, event model.Event) error
 	GetEventParticipantByEventName(ctx context.Context, name string) ([]model.Participant, error)
 	CloseEvent(ctx context.Context, event model.Event) error
