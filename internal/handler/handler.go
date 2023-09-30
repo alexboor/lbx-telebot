@@ -196,7 +196,7 @@ func (h Handler) EventCmd(c tele.Context) error {
 		return nil
 	}
 
-	opt, ok := parseEventPayload(msg.Sender.ID, msg.Payload)
+	newEvent, ok := parseEventPayload(msg.Sender.ID, msg.Payload)
 	if !ok {
 		_, err := c.Bot().Send(c.Sender(), message.GetEventInstruction(), markdownOpt)
 		return err
@@ -204,8 +204,8 @@ func (h Handler) EventCmd(c tele.Context) error {
 
 	administeredGroup := map[int64]string{}
 	// check admin rights
-	if opt.Cmd == model.EventCreate || opt.Cmd == model.EventClose || opt.Cmd == model.EventShow ||
-		opt.Cmd == model.EventShare {
+	if newEvent.Cmd == model.EventCreate || newEvent.Cmd == model.EventClose || newEvent.Cmd == model.EventShow ||
+		newEvent.Cmd == model.EventShare {
 		var isAdmin bool
 
 		for _, chatId := range h.Config.AllowedChats {
@@ -232,72 +232,72 @@ func (h Handler) EventCmd(c tele.Context) error {
 	ctx := context.Background()
 
 	// creating event
-	if opt.Cmd == model.EventCreate {
-		event, err := h.Storage.GetEventByName(ctx, opt.Name)
+	if newEvent.Cmd == model.EventCreate {
+		event, err := h.Storage.GetEventByName(ctx, newEvent.Name)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) { // it is okay that there are no rows with given name
 			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("checking event"), markdownOpt)
 			return err
 		}
 
 		// check existing event, it shouldn't be event with given name
-		if event.Name == opt.Name {
-			resp := fmt.Sprintf("Event with name `%v` already exists", opt.Name)
+		if event.Name == newEvent.Name {
+			resp := fmt.Sprintf("Event with name `%v` already exists", newEvent.Name)
 			return c.Send(resp, markdownOpt)
 		}
 
 		// create new event in db
-		if err := h.Storage.CreateNewEvent(ctx, opt); err != nil {
+		if err := h.Storage.CreateNewEvent(ctx, newEvent); err != nil {
 			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("creating event"), markdownOpt)
 			return err
 		}
 
-		resp := message.GetEventCreate(opt)
+		resp := message.GetEventCreate(newEvent)
 		return c.Send(resp, markdownOpt)
 	}
 
 	// closing event
-	if opt.Cmd == model.EventClose {
-		event, err := h.Storage.GetEventByName(ctx, opt.Name)
+	if newEvent.Cmd == model.EventClose {
+		event, err := h.Storage.GetEventByName(ctx, newEvent.Name)
 		if errors.Is(err, pgx.ErrNoRows) { // it is not ok that there is no event with given name in db
-			resp := fmt.Sprintf("There is no event with name %v", opt.Name)
+			resp := fmt.Sprintf("There is no event with name %v", newEvent.Name)
 			return c.Send(resp, markdownOpt)
 		}
 
 		// event should not be closed
 		if event.Status == model.EventStatusFinished {
-			resp := fmt.Sprintf("Event %v is already closed!", opt.Name)
+			resp := fmt.Sprintf("Event %v is already closed!", newEvent.Name)
 			return c.Send(resp, markdownOpt)
 		}
 
 		// getting participant for event
-		participants, err := h.Storage.GetEventParticipantByEventName(ctx, opt.Name)
+		participants, err := h.Storage.GetEventParticipantByEventName(ctx, newEvent.Name)
 		if err != nil {
 			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("getting participants"), markdownOpt)
 			return err
 		}
-		opt.SetWinners(participants)
+		newEvent.SetWinners(participants)
 
 		// update event in db
-		if err := h.Storage.CloseEvent(ctx, opt); err != nil {
+		if err := h.Storage.CloseEvent(ctx, newEvent); err != nil {
 			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("closing event"), markdownOpt)
 			return err
 		}
 
 		// get profiles for winners by ids
-		if len(opt.WinnerIds) != 0 {
-			opt.WinnerProfiles, err = h.Storage.GetProfilesById(ctx, opt.WinnerIds)
+		if len(newEvent.WinnerIds) != 0 {
+			newEvent.WinnerProfiles, err = h.Storage.GetProfilesById(ctx, newEvent.WinnerIds)
 			if err != nil {
 				_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("getting winners"), markdownOpt)
 				return err
 			}
 		}
 
-		resp := message.GetEventResult(opt)
+		resp := message.GetEventResult(newEvent)
 		return c.Send(resp, markdownOpt)
 	}
 
 	// showing list of events
-	if opt.Cmd == model.EventShow {
+	if newEvent.Cmd == model.EventShow {
 		events, err := h.Storage.GetAllEvents(ctx)
 		if err != nil {
 			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("getting list of events"), markdownOpt)
@@ -309,8 +309,8 @@ func (h Handler) EventCmd(c tele.Context) error {
 		return err
 	}
 
-	if opt.Cmd == model.EventResult {
-		event, err := h.Storage.GetEventWithWinnersByName(ctx, opt.Name)
+	if newEvent.Cmd == model.EventResult {
+		event, err := h.Storage.GetEventWithWinnersByName(ctx, newEvent.Name)
 		if err != nil {
 			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("with getting event"), markdownOpt)
 			return err
@@ -318,7 +318,7 @@ func (h Handler) EventCmd(c tele.Context) error {
 
 		// event should be closed
 		if event.Status != model.EventStatusFinished {
-			resp := fmt.Sprintf("Event %v is still opened", opt.Name)
+			resp := fmt.Sprintf("Event %v is still opened", newEvent.Name)
 			return c.Send(resp, markdownOpt)
 		}
 
@@ -327,18 +327,20 @@ func (h Handler) EventCmd(c tele.Context) error {
 	}
 
 	// betting value for event
-	if opt.Cmd == model.EventBet {
-		if err := h.Storage.StoreBet(ctx, opt, msg.Sender.ID); err != nil {
+	if newEvent.Cmd == model.EventBet {
+		if err := h.Storage.StoreBet(ctx, newEvent, msg.Sender.ID); err != nil {
 			_, err := c.Bot().Send(c.Sender(), message.GetErrorMessage("saving bet"), markdownOpt)
 			return err
 		}
 
-		// TODO send something that proves acceptance of bet
+		resp := fmt.Sprintf("Your bet `%v` for event `%v` is accepted!", newEvent.Bet, newEvent.Name)
+		_, err := c.Bot().Send(c.Sender(), resp, markdownOpt)
+		return err
 	}
 
 	// send message for sharing event to group or channel
-	if opt.Cmd == model.EventShare {
-		resp, keyboard := message.GetEventShareKeyboard(opt.Name, administeredGroup)
+	if newEvent.Cmd == model.EventShare {
+		resp, keyboard := message.GetEventShareKeyboard(newEvent.Name, administeredGroup)
 		_, err := c.Bot().Send(c.Sender(), resp, keyboard)
 		return err
 	}

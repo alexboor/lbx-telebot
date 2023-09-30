@@ -55,36 +55,36 @@ func GetEventInstruction() string {
 Available commands:
 
 /event create \[name]
-Create new event with \[name] option. It could be sent to group or to Valera directly.
+Create new event with \[name] option. It could be sent in group chat or in a direct chat with Valera.
 You should have admin rights.
 Option is required:
 	name - Uniq name for new event. Should be one word with chars and digits only 
 
 /event close \[name] \[result]
-Close event with \[name] and \[result] options. It could be sent to group or to Valera directly.
+Close event with \[name] and \[result] options. It could be sent in group chat or in a direct chat with Valera.
 You should have admin rights.
 Options are required:
 	name - Uniq name for existing event. Should be one word with chars and digits only 
 	result - Result of the event. Should be number
 
 /event show
-Show all event. It could be sent to group or to Valera directly.
+Show all event. It could be sent in group chat or in a direct chat with Valera.
 You should have admin rights.
 
 /event result \[name]
-Show result for event with given name. It could be sent to group or to Valera directly.
-Options are required:
+Show result for event with given name. It could be sent in group chat or in a direct chat with Valera.
+Option is required:
 	name - Uniq name for existing event. Should be one word with chars and digits only 
 
 /event bet \[name] \[value]
-Show all event. It could be sent to group or to Valera directly.
+Make your bet with value. It could be sent in group chat or in a direct chat with Valera.
 Options are required:
 	name - Uniq name for existing event. Should be one word with chars and digits only 
 	value - Your bet for this event. Should be number
 
 /event share \[name]
 Share event in administered groups
-Option are required:
+Option is required:
 	name - Uniq name for existing event. Should be one word with chars and digits only`
 }
 
@@ -113,7 +113,8 @@ func GetEventShare(event model.Event) string {
 		msg.WriteString(fmt.Sprintf("Event `%v` has been started!\n", event.Name))
 		msg.WriteString("Ladies and gentlemen place your bets!\n")
 		msg.WriteString(fmt.Sprintf("To place your bet type \n`/event bet %v value`\n", event.Name))
-		msg.WriteString("Where value is your bet. It should be integer.")
+		msg.WriteString("Where value is your bet. It should be integer.\n")
+		msg.WriteString("It could be sent in group chat or in a direct chat with Valera.\n")
 
 	case model.EventStatusFinished:
 		msg.WriteString(GetEventResult(event))
