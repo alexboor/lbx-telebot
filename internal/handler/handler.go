@@ -14,7 +14,6 @@ import (
 	"github.com/alexboor/lbx-telebot/internal/model"
 	"github.com/alexboor/lbx-telebot/internal/storage"
 	"github.com/jdkato/prose/v2"
-	"golang.org/x/exp/maps"
 	tele "gopkg.in/telebot.v3"
 )
 
@@ -72,16 +71,22 @@ func (h Handler) Count(c tele.Context) error {
 		return err
 	}
 
-	m := make(map[string]int)
-	for _, tok := range doc.Tokens() {
-		// filtering words only 2 symbols and longer
-		// this is the right place to filtering stopwords
-		if len(tok.Text) > 1 {
-			m[tok.Text] = 0
+	var count int
+	if msg.IsForwarded() {
+		count++
+	} else {
+		uniqWords := make(map[string]struct{})
+		for _, tok := range doc.Tokens() {
+			// filtering words only 2 symbols and longer
+			// this is the right place to filtering stopwords
+			if len(tok.Text) > 1 {
+				uniqWords[tok.Text] = struct{}{}
+			}
 		}
+		count = len(uniqWords)
 	}
 
-	if err := h.Storage.Count(ctx, msg.Sender.ID, msg.Chat.ID, dt, len(maps.Keys(m))); err != nil {
+	if err := h.Storage.Count(ctx, msg.Sender.ID, msg.Chat.ID, dt, count); err != nil {
 		return err
 	}
 
