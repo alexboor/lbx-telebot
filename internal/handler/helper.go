@@ -206,7 +206,7 @@ func parseEventPayload(author int64, payload string) (model.Event, bool) {
 	}
 
 	if (result.Cmd == model.EventCreate || result.Cmd == model.EventClose || result.Cmd == model.EventBet) &&
-		(len(result.Name) > 500 || len(result.Name) == 0 || result.Bet < 0) {
+		(len(result.Name) > 500 || len(result.Name) == 0) {
 		return result, false
 	}
 
