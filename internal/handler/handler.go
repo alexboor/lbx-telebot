@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	version = "2.5.0"
+	version = "2.5.1"
 	limit   = 5
 
 	markdownOpt = "Markdown" // TODO change to v2
