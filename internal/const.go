@@ -3,7 +3,11 @@ package internal
 import "time"
 
 const (
-	Timeout = 10 * time.Second
+	Version = "2.5.0"
+
+	Timeout     = 10 * time.Second
+	RatingLimit = 5
+	MarkdownOpt = "Markdown" // TODO change to v2
 
 	ShareBtn = "share"
 
