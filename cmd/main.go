@@ -94,6 +94,13 @@ func main() {
 	// Handle only messages in allowed groups (msg.Chat.Type = "group" | "supergroup")
 	// private messages handles only by command endpoint handler
 	bot.Handle(tele.OnText, h.Count)
+	bot.Handle(tele.OnAudio, h.Count)
+	bot.Handle(tele.OnVideo, h.Count)
+	bot.Handle(tele.OnAnimation, h.Count)
+	bot.Handle(tele.OnDocument, h.Count)
+	bot.Handle(tele.OnPhoto, h.Count)
+	bot.Handle(tele.OnVoice, h.Count)
+	bot.Handle(tele.OnSticker, h.Count)
 
 	slog.Info("up and listen")
 	bot.Start()

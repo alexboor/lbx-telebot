@@ -11,6 +11,7 @@ require (
 
 require (
 	github.com/deckarep/golang-set v1.7.1 // indirect
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.14.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -20,8 +21,10 @@ require (
 	github.com/jackc/pgtype v1.14.0 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
 	github.com/mingrammer/commonregex v1.0.1 // indirect
+	github.com/wcharczuk/go-chart/v2 v2.1.1 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/image v0.11.0 // indirect
+	golang.org/x/text v0.12.0 // indirect
 	gonum.org/v1/gonum v0.7.0 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.6 // indirect
 )
