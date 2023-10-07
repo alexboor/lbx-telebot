@@ -9,7 +9,7 @@ import (
 
 func GenerateProfileRatingImage(profile model.Profile, opt model.Option) (string, error) {
 	title := getProfileTitle(profile, opt)
-	total := profile.GetCountTotal()
+	avg := profile.Count.GetAvgStatistic()
 	bar := chart.BarChart{
 		Title: title,
 		DPI:   100,
@@ -18,16 +18,17 @@ func GenerateProfileRatingImage(profile model.Profile, opt model.Option) (string
 				Top: 60,
 			},
 		},
-		Height:   570,
-		BarWidth: 110,
+		Height:   710,
+		BarWidth: 100,
 		YAxis:    chart.YAxis{Style: chart.Style{Hidden: true}, Range: nil},
 		Bars: []chart.Value{
 			{Value: float64(profile.Count.Word), Label: fmt.Sprintf("%v\nWords", profile.Count.Word)},
+			{Value: float64(profile.Count.Message), Label: fmt.Sprintf("%v\nMessages", profile.Count.Message)},
 			{Value: float64(profile.Count.Reply), Label: fmt.Sprintf("%v\nReplies", profile.Count.Reply)},
 			{Value: float64(profile.Count.Forward), Label: fmt.Sprintf("%v\nForwards", profile.Count.Forward)},
 			{Value: float64(profile.Count.Sticker), Label: fmt.Sprintf("%v\nStickers", profile.Count.Sticker)},
 			{Value: float64(profile.Count.Media), Label: fmt.Sprintf("%v\nMedia", profile.Count.Media)},
-			{Value: float64(total), Label: fmt.Sprintf("%v\nTotal", total)},
+			{Value: avg, Label: fmt.Sprintf("%v\ntotal/messages", avg)},
 		},
 	}
 

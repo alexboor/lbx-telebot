@@ -134,7 +134,7 @@ select id,
        last_name,
        user_name,
        (select array [ coalesce(sum(word), 0), coalesce(sum(reply), 0), coalesce(sum(forward), 0), 
-               coalesce(sum(media), 0), coalesce(sum(sticker), 0) ]
+               coalesce(sum(media), 0), coalesce(sum(sticker), 0), coalesce(sum(message), 0) ]
         from counting
         where date >= $1
           and user_id = id
@@ -158,6 +158,7 @@ group by id, first_name, last_name, user_name`
 	p.Count.Forward = cnt[2]
 	p.Count.Media = cnt[3]
 	p.Count.Sticker = cnt[4]
+	p.Count.Message = cnt[5]
 
 	return p, err
 }
@@ -170,7 +171,7 @@ select id,
        last_name,
        user_name,
        (select array [ coalesce(sum(word), 0), coalesce(sum(reply), 0), coalesce(sum(forward), 0), 
-               coalesce(sum(media), 0), coalesce(sum(sticker), 0) ]
+               coalesce(sum(media), 0), coalesce(sum(sticker), 0), coalesce(sum(message), 0) ]
         from counting
         where date >= $1
           and user_id = id
@@ -194,6 +195,7 @@ group by id, first_name, last_name, user_name`
 	p.Count.Forward = cnt[2]
 	p.Count.Media = cnt[3]
 	p.Count.Sticker = cnt[4]
+	p.Count.Message = cnt[5]
 
 	return p, err
 }
