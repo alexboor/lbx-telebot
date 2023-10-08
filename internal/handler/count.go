@@ -30,6 +30,7 @@ func (h Handler) Count(c tele.Context) error {
 	dt := time.Unix(msg.Unixtime, 0)
 
 	var count model.Count
+	count.Message++
 	if msg.IsForwarded() {
 		count.Forward++
 	} else {

@@ -9,14 +9,15 @@ import (
 // Count increment messages counter in storage by given value for user in the chat
 func (s *Storage) Count(ctx context.Context, uid, cid int64, dt time.Time, count model.Count) error {
 	query := `
-insert into counting (user_id, chat_id, date, word, reply, forward, media, sticker)
-values ($1, $2, $3, $4, $5, $6, $7, $8)
+insert into counting (user_id, chat_id, date, word, reply, forward, media, sticker, message)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 on conflict (user_id, chat_id, date)
     do update set word    = counting.word + excluded.word,
                   reply   = counting.reply + excluded.reply,
                   forward = counting.forward + excluded.forward,
                   media   = counting.media + excluded.media,
-                  sticker = counting.sticker + excluded.sticker`
+                  sticker = counting.sticker + excluded.sticker,
+                  message = counting.message + excluded.message`
 
 	_, err := s.Pool.Exec(
 		ctx, query,
@@ -28,6 +29,7 @@ on conflict (user_id, chat_id, date)
 		count.Forward, // $6
 		count.Media,   // $7
 		count.Sticker, // $8
+		count.Message, // $9
 	)
 	return err
 }

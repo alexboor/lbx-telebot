@@ -13,3 +13,7 @@ create table if not exists counting
     sticker numeric default 0,
     unique (user_id, chat_id, date)
 )`
+
+const countMessages = `
+alter table counting
+    add if not exists message numeric default 0`

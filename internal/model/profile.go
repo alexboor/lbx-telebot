@@ -23,7 +23,3 @@ func NewProfile(user *telebot.User) Profile {
 		UserName:  strings.ToLower(user.Username),
 	}
 }
-
-func (p Profile) GetCountTotal() int {
-	return p.Count.Word + p.Count.Media + p.Count.Reply + p.Count.Sticker + p.Count.Forward
-}
