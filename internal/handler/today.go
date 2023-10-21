@@ -8,6 +8,10 @@ import (
 )
 
 func (h Handler) TodayCmd(c tele.Context) error {
+	if !h.IsAllowedGroup(c.Message()) {
+		return nil
+	}
+
 	event, err := wikimedia.GetOnThisDay()
 	if err != nil {
 		return err
