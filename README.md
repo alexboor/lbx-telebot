@@ -12,7 +12,7 @@ Show the current version.
 `/profile` [name]
 Show the stored profile of the requester or another user.
 Options:
-      name - target chat participant.
+name - target chat participant.
 
 `/top`
 Show top users.
@@ -22,3 +22,6 @@ Show reversed rating.
 
 `/event`
 Show detailed information about events
+
+`/today`
+Returns what happened on this day
