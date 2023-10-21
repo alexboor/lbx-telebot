@@ -47,6 +47,9 @@ Set new title in the group
 /event
 Command for event. Send command without params for detailed instructions.
 
+/today
+Returns what happened on this day
+
 I live here: https://github.com/alexboor/lbx-telebot
 `
 }
