@@ -21,4 +21,5 @@ const (
 	ProfileCmd = "/profile"
 	TopicCmd   = "/topic"
 	EventCmd   = "/event"
+	TodayCmd   = "/today"
 )
