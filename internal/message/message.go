@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/alexboor/lbx-telebot/internal"
+	"github.com/alexboor/lbx-telebot/internal/wikimedia"
 	"gopkg.in/telebot.v3"
 
 	"github.com/alexboor/lbx-telebot/internal/model"
@@ -45,6 +46,9 @@ Set new title in the group
 
 /event
 Command for event. Send command without params for detailed instructions.
+
+/today
+Returns what happened on this day
 
 I live here: https://github.com/alexboor/lbx-telebot
 `
@@ -192,6 +196,31 @@ func CreateRating(profiles []model.Profile, opt model.Option) string {
 		}
 		result.WriteString(fmt.Sprintf("%v. %v: %v",
 			profile.Position, getName(profile), profile.Count.Total))
+	}
+
+	return result.String()
+}
+
+func GetTodayMessage(otd wikimedia.OnThisDay) string {
+	var result strings.Builder
+
+	switch otd.Type {
+	case wikimedia.Birthday:
+		result.WriteString("On this day")
+		if otd.Year != 0 {
+			result.WriteString(fmt.Sprintf(" in %d", otd.Year))
+		}
+		result.WriteString(fmt.Sprintf(" was born %s", otd.Text))
+
+	case wikimedia.Holiday:
+		result.WriteString(fmt.Sprintf("Today is %s", otd.Text))
+
+	case wikimedia.Event:
+		result.WriteString("On this day")
+		if otd.Year != 0 {
+			result.WriteString(fmt.Sprintf(" in %d", otd.Year))
+		}
+		result.WriteString(fmt.Sprintf(": %s", otd.Text))
 	}
 
 	return result.String()

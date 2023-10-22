@@ -3,10 +3,11 @@ package handler
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/alexboor/lbx-telebot/internal/message"
 	"github.com/alexboor/lbx-telebot/internal/model"
 	tele "gopkg.in/telebot.v3"
-	"os"
 )
 
 // GetProfileCount is handler for internal.ProfileCmd command
@@ -41,6 +42,4 @@ func (h Handler) GetProfileCount(c tele.Context) error {
 	defer func() { _ = os.Remove(filename) }()
 	image := &tele.Photo{File: tele.FromDisk(filename)}
 	return c.Send(image)
-	//response := message.getProfileTitle(profile, opt)
-	//return c.Send(response)
 }
