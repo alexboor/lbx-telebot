@@ -2,10 +2,11 @@ package message
 
 import (
 	"fmt"
-	"github.com/alexboor/lbx-telebot/internal"
-	"gopkg.in/telebot.v3"
 	"strconv"
 	"strings"
+
+	"github.com/alexboor/lbx-telebot/internal"
+	"gopkg.in/telebot.v3"
 
 	"github.com/alexboor/lbx-telebot/internal/model"
 )
@@ -190,20 +191,20 @@ func CreateRating(profiles []model.Profile, opt model.Option) string {
 			result.WriteString("\n")
 		}
 		result.WriteString(fmt.Sprintf("%v. %v: %v",
-			profile.Position, getName(profile), profile.Count))
+			profile.Position, getName(profile), profile.Count.Total))
 	}
 
 	return result.String()
 }
 
-// CreateUserCount returns information about given profile
-func CreateUserCount(profile model.Profile, opt model.Option) string {
+// getProfileTitle returns information about given profile
+func getProfileTitle(profile model.Profile, opt model.Option) string {
 	if profile.Id == 0 {
-		return "nothing"
+		return "unknown"
 	}
 
 	var result strings.Builder
-	result.WriteString(fmt.Sprintf("%v: %v", getName(profile), profile.Count))
+	result.WriteString(fmt.Sprintf("%v", getName(profile)))
 	if !opt.Date.IsZero() {
 		result.WriteString(fmt.Sprintf(" since %v", opt.Date.Format("2006-01-02")))
 	}

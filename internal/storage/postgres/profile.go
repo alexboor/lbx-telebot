@@ -33,13 +33,13 @@ select id,
        first_name,
        last_name,
        user_name,
-       (select coalesce(sum(val), 0) as cnt
-        from word_count
+       (select coalesce(sum(word) + sum(reply) + sum(forward) + sum(media) + sum(sticker), 0) as cnt
+        from counting
         where date >= $1
           and user_id = id
           and chat_id = $2) as cnt
 from profile
-where id in (select user_id from word_count where chat_id = $2)
+where id in (select user_id from counting where chat_id = $2)
 group by id, first_name, last_name, user_name
 order by cnt desc
 limit $3`
@@ -58,7 +58,7 @@ limit $3`
 	var profiles []model.Profile
 	for rows.Next() {
 		var p model.Profile
-		err := rows.Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &p.Count)
+		err := rows.Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &p.Count.Total)
 		if err != nil {
 			return nil, fmt.Errorf("on scan: %v", err)
 		}
@@ -80,13 +80,13 @@ select id,
        first_name,
        last_name,
        user_name,
-       (select coalesce(sum(val), 0) as cnt
-        from word_count
+       (select coalesce(sum(word) + sum(reply) + sum(forward) + sum(media) + sum(sticker), 0) as cnt
+        from counting
         where date >= $1
           and user_id = id
           and chat_id = $2) as cnt
 from profile
-where id in (select user_id from word_count where chat_id = $2)
+where id in (select user_id from counting where chat_id = $2)
 group by id, first_name, last_name, user_name
 order by cnt
 limit $3`
@@ -105,7 +105,7 @@ limit $3`
 	var profiles []model.Profile
 	for rows.Next() {
 		var p model.Profile
-		err := rows.Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &p.Count)
+		err := rows.Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &p.Count.Total)
 		if err != nil {
 			return nil, fmt.Errorf("on scan: %v", err)
 		}
@@ -133,8 +133,9 @@ select id,
        first_name,
        last_name,
        user_name,
-       (select coalesce(sum(val), 0) as cnt
-        from word_count
+       (select array [ coalesce(sum(word), 0), coalesce(sum(reply), 0), coalesce(sum(forward), 0), 
+               coalesce(sum(media), 0), coalesce(sum(sticker), 0), coalesce(sum(message), 0) ]
+        from counting
         where date >= $1
           and user_id = id
           and chat_id = $2) as cnt
@@ -142,8 +143,23 @@ from profile
 where user_name = $3
 group by id, first_name, last_name, user_name`
 
-	var p model.Profile
-	err := s.Pool.QueryRow(ctx, query, opt.Date, chatId, opt.Profile).Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &p.Count)
+	var (
+		p   model.Profile
+		cnt []int
+	)
+	err := s.Pool.QueryRow(ctx, query, opt.Date, chatId, opt.Profile).
+		Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &cnt)
+	if err != nil {
+		return p, err
+	}
+
+	p.Count.Word = cnt[0]
+	p.Count.Reply = cnt[1]
+	p.Count.Forward = cnt[2]
+	p.Count.Media = cnt[3]
+	p.Count.Sticker = cnt[4]
+	p.Count.Message = cnt[5]
+
 	return p, err
 }
 
@@ -154,8 +170,9 @@ select id,
        first_name,
        last_name,
        user_name,
-       (select coalesce(sum(val), 0) as cnt
-        from word_count
+       (select array [ coalesce(sum(word), 0), coalesce(sum(reply), 0), coalesce(sum(forward), 0), 
+               coalesce(sum(media), 0), coalesce(sum(sticker), 0), coalesce(sum(message), 0) ]
+        from counting
         where date >= $1
           and user_id = id
           and chat_id = $2) as cnt
@@ -163,8 +180,23 @@ from profile
 where id = $3
 group by id, first_name, last_name, user_name`
 
-	var p model.Profile
-	err := s.Pool.QueryRow(ctx, query, opt.Date, chatId, id).Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &p.Count)
+	var (
+		p   model.Profile
+		cnt []int
+	)
+	err := s.Pool.QueryRow(ctx, query, opt.Date, chatId, id).
+		Scan(&p.Id, &p.FirstName, &p.LastName, &p.UserName, &cnt)
+	if err != nil {
+		return p, err
+	}
+
+	p.Count.Word = cnt[0]
+	p.Count.Reply = cnt[1]
+	p.Count.Forward = cnt[2]
+	p.Count.Media = cnt[3]
+	p.Count.Sticker = cnt[4]
+	p.Count.Message = cnt[5]
+
 	return p, err
 }
 
@@ -216,7 +248,7 @@ where id = any($1)`
 func (s *Storage) GetProfileIdsByChatId(ctx context.Context, chatId int64) ([]int64, error) {
 	query := `
 select distinct user_id
-from word_count
+from counting
 where chat_id = $1`
 
 	rows, err := s.Pool.Query(ctx, query, chatId)
@@ -244,7 +276,7 @@ func (s *Storage) getLen(ctx context.Context, chatId int64) (int, error) {
 select count(*)
 from profile
 where id in (select distinct user_id
-             from word_count
+             from counting
              where chat_id = $1)`
 
 	var cnt int

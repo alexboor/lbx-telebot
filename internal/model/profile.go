@@ -11,7 +11,7 @@ type Profile struct {
 	LastName  string
 	UserName  string
 	Position  int
-	Count     int
+	Count     Count
 }
 
 // NewProfile creates new Profile by given id, username, first name and last name
