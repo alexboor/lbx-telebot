@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
+	"log"
+	"log/slog"
+
 	"github.com/alexboor/lbx-telebot/internal"
 	"github.com/alexboor/lbx-telebot/internal/cfg"
 	"github.com/alexboor/lbx-telebot/internal/handler"
 	"github.com/alexboor/lbx-telebot/internal/model"
 	"github.com/alexboor/lbx-telebot/internal/storage/postgres"
 	tele "gopkg.in/telebot.v3"
-	"log"
-	"log/slog"
 )
 
 func main() {
@@ -87,6 +88,7 @@ func main() {
 	bot.Handle(internal.ProfileCmd, h.GetProfileCount)
 	bot.Handle(internal.TopicCmd, h.SetTopic)
 	bot.Handle(internal.EventCmd, h.EventCmd)
+	bot.Handle(internal.TodayCmd, h.TodayCmd)
 
 	// Button handlers
 	bot.Handle("\f"+internal.ShareBtn, h.EventCallback)
