@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"log"
-	"time"
+	"log/slog"
 
+	"github.com/alexboor/lbx-telebot/internal"
 	"github.com/alexboor/lbx-telebot/internal/cfg"
 	"github.com/alexboor/lbx-telebot/internal/handler"
 	"github.com/alexboor/lbx-telebot/internal/model"
@@ -13,6 +14,11 @@ import (
 )
 
 func main() {
+	cfg.InitLogger()
+
+	slog.Info("starting...")
+	defer slog.Info("finished")
+
 	config := cfg.New()
 	ctx := context.Background()
 
@@ -28,7 +34,7 @@ func main() {
 
 	opts := tele.Settings{
 		Token:  config.Token,
-		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
+		Poller: &tele.LongPoller{Timeout: internal.Timeout},
 	}
 
 	bot, err := tele.NewBot(opts)
@@ -41,7 +47,8 @@ func main() {
 	for _, chatId := range config.AllowedChats {
 		profileIds, err := pg.GetProfileIdsByChatId(ctx, chatId)
 		if err != nil {
-			log.Printf("failed to get profile ids for chat=%v: %v", chatId, err)
+			slog.Error("failed to get profile ids for chat",
+				slog.Any("chat", chatId), slog.Any("error", err))
 			continue
 		}
 
@@ -54,13 +61,15 @@ func main() {
 
 			profile, err := bot.ChatMemberOf(tele.ChatID(chatId), &tele.User{ID: id})
 			if err != nil {
-				log.Printf("failed to get profile info for id=%v: %v", id, err)
+				slog.Error("failed to get profile info for id",
+					slog.Any("id", id), slog.Any("error", err))
 				continue
 			}
 
 			p := model.NewProfile(profile.User)
 			if err := pg.StoreProfile(ctx, p); err != nil {
-				log.Printf("failed to store profile with id=%v: %v", profile.User.ID, err)
+				slog.Error("failed to store profile with id",
+					slog.Any("id", profile.User.ID), slog.Any("error", err))
 			}
 		}
 	}
@@ -68,22 +77,33 @@ func main() {
 
 	// Commands handlers
 	// Should not handle anything except commands in private messages
-	bot.Handle("/help", h.Help)
-	bot.Handle("/h", h.Help)
-	bot.Handle("/start", h.Help)
-	bot.Handle("/ver", h.Ver)
-	bot.Handle("/v", h.Ver)
+	bot.Handle(internal.HelpCmd, h.Help)
+	bot.Handle(internal.HCmd, h.Help)
+	bot.Handle(internal.StartCmd, h.Help)
+	bot.Handle(internal.VerCmd, h.Ver)
+	bot.Handle(internal.VCmd, h.Ver)
 
-	bot.Handle("/top", h.GetTop)
-	bot.Handle("/bottom", h.GetBottom)
-	bot.Handle("/profile", h.GetProfileCount)
-	bot.Handle("/topic", h.SetTopic)
-	bot.Handle("/event", h.Event)
+	bot.Handle(internal.TopCmd, h.GetTop)
+	bot.Handle(internal.BottomCmd, h.GetBottom)
+	bot.Handle(internal.ProfileCmd, h.GetProfileCount)
+	bot.Handle(internal.TopicCmd, h.SetTopic)
+	bot.Handle(internal.EventCmd, h.EventCmd)
+	bot.Handle(internal.TodayCmd, h.TodayCmd)
+
+	// Button handlers
+	bot.Handle("\f"+internal.ShareBtn, h.EventCallback)
 
 	// Handle only messages in allowed groups (msg.Chat.Type = "group" | "supergroup")
 	// private messages handles only by command endpoint handler
 	bot.Handle(tele.OnText, h.Count)
+	bot.Handle(tele.OnAudio, h.Count)
+	bot.Handle(tele.OnVideo, h.Count)
+	bot.Handle(tele.OnAnimation, h.Count)
+	bot.Handle(tele.OnDocument, h.Count)
+	bot.Handle(tele.OnPhoto, h.Count)
+	bot.Handle(tele.OnVoice, h.Count)
+	bot.Handle(tele.OnSticker, h.Count)
 
-	log.Println("up and listen")
+	slog.Info("up and listen")
 	bot.Start()
 }

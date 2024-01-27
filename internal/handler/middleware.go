@@ -7,7 +7,7 @@ import (
 
 // IsAllowedGroup checks that chat is group and id of given group is allowed
 func (h Handler) IsAllowedGroup(msg *tele.Message) bool {
-	if msg.Chat.Type != "group" && msg.Chat.Type != "supergroup" && !slices.Contains(h.Config.AllowedChats, msg.Chat.ID) {
+	if msg.Chat.Type != "group" && msg.Chat.Type != "supergroup" || !slices.Contains(h.Config.AllowedChats, msg.Chat.ID) {
 		return false
 	}
 	return true
