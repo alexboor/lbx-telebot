@@ -19,7 +19,7 @@ import (
 //	It could have variants of payload
 //	- create with name of event
 //	- close with name of event and result
-//	- show to get all events with statuses
+//	- list to get all events with statuses
 //	- bet with name of event and value of bet
 //	- result to get result of closed event
 //	- share to send event to administered group or channel

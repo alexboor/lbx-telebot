@@ -65,16 +65,16 @@ You should have admin rights.
 Option is required:
 	name - Uniq name for new event. Should be one word with chars and digits only 
 
+/event list
+Show all event. It could be sent in group chat or in a direct chat with Valera.
+You should have admin rights.
+
 /event close \[name] \[result]
 Close event with \[name] and \[result] options. It could be sent in group chat or in a direct chat with Valera.
 You should have admin rights.
 Options are required:
 	name - Uniq name for existing event. Should be one word with chars and digits only 
 	result - Result of the event. Should be number
-
-/event show
-Show all event. It could be sent in group chat or in a direct chat with Valera.
-You should have admin rights.
 
 /event result \[name]
 Show result for event with given name. It could be sent in group chat or in a direct chat with Valera.

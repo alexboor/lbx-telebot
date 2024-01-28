@@ -62,7 +62,7 @@ func GetNewEvent(author int64, payload string) (Event, bool) {
 		result = newEvent(EventClose, opts[1], author)
 		result.Result = evRes
 
-	case "show":
+	case "list":
 		if len(opts) != 1 {
 			return result, false
 		}
