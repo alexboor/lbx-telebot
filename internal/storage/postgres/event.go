@@ -97,10 +97,13 @@ where event_name = $1`
 }
 
 // GetAllEvents returns all events
-func (s *Storage) GetAllEvents(ctx context.Context) ([]model.Event, error) {
-	query := `
-select name, created_at, finished_at, author, result, status, winners
-from event`
+func (s *Storage) GetAllEvents(ctx context.Context, all bool) ([]model.Event, error) {
+	query := `select name, created_at, finished_at, author, result, status, winners
+					from event where status = 'opened'`
+	if all {
+		query = `select name, created_at, finished_at, author, result, status, winners
+					from event`
+	}
 
 	rows, err := s.Pool.Query(ctx, query)
 	if err != nil {
