@@ -213,7 +213,7 @@ func (h Handler) eventList(c tele.Context, e model.Event) error {
 	}
 
 	resp := message.GetEventList(events, showAll)
-	_, err = c.Bot().Send(c.Sender(), resp, internal.MarkdownOpt)
+	err = c.Send(resp, internal.MarkdownOpt)
 	return err
 }
 
@@ -242,6 +242,8 @@ func (h Handler) eventResult(c tele.Context, newEvent model.Event) error {
 func (h Handler) eventBet(c tele.Context, newEvent model.Event, userId int64) error {
 	ctx := context.Background()
 
+	fmt.Printf("Sender: %v\n", c.Sender())
+
 	if err := h.Storage.StoreBet(ctx, newEvent, userId); err != nil {
 		resp := message.GetErrorMessage("saving bet")
 		_, err := c.Bot().Send(c.Sender(), resp, internal.MarkdownOpt)
@@ -249,7 +251,7 @@ func (h Handler) eventBet(c tele.Context, newEvent model.Event, userId int64) er
 	}
 
 	resp := fmt.Sprintf("Your bet `%v` for event `%v` is accepted!", newEvent.Bet, newEvent.Name)
-	_, err := c.Bot().Send(c.Sender(), resp, internal.MarkdownOpt)
+	err := c.Send(resp, internal.MarkdownOpt)
 	return err
 }
 
