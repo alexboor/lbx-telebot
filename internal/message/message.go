@@ -17,37 +17,37 @@ func GetHelp() string {
 	return `
 *Available commands:*
 
-/help or /h
+*/help* or */h*
 Show this help.
 
-/ver or /v
+*/ver* or */v*
 Show the current version.
 
-/profile \[name] \[period]
+*/profile* _NAME_ _PERIOD_
 Show the stored profile of the requester or another user.
 Options:
-	name - target chat participant
-	period - custom period of statistic (e.g. 7d, 72h), should be > 0
+	_NAME_ - target chat participant
+	_PERIOD_ - custom period of statistic (e.g. 7d, 72h), should be > 0
 
-/top \[num] \[period]
+*/top* _NUM_ _PERIOD_
 Show top users.
 Options:
-	num - custom number of positions to show, should be > 0
-	period - custom period of statistic (e.g. 7d, 72h), should be > 0
+	_NUM_ - custom number of positions to show, should be > 0
+	_PERIOD_ - custom period of statistic (e.g. 7d, 72h), should be > 0
 
-/bottom \[num] \[period]
+*/bottom* _NUM_ _PERIOD_
 Show reversed rating
 Options:
-	num - custom number of positions to show, should be > 0
-	period - custom period of statistic (e.g. 7d, 72h), should be > 0
+	_NUM_ - custom number of positions to show, should be > 0
+	_PERIOD_ - custom period of statistic (e.g. 7d, 72h), should be > 0
 
-/topic text
+*/topic* _text_
 Set new title in the group
 
-/event
+*/event*
 Command for event. Send command without params for detailed instructions.
 
-/today
+*/today*
 Returns what happened on this day
 
 I live here: https://github.com/alexboor/lbx-telebot
@@ -59,40 +59,40 @@ func GetEventInstruction() string {
 	return `
 Available commands:
 
-/event create \[name]
-Create new event with \[name] option. It could be sent in group chat or in a direct chat with Valera.
+*/event* create _NAME_
+Create new event with _NAME_ option. It could be sent in group chat or in a direct chat with Valera.
 You should have admin rights.
 Option is required:
-	name - Uniq name for new event. Should be one word with chars and digits only 
+	NAME - Uniq name for new event. Should be one word with chars and digits only 
 
-/event list \[-a | all]
+*/event* list \[_-a_ | _all_]
 Show all active event. It could be sent in group chat or in a direct chat with Valera.
 Options:
-	-a (or "all") shows all events either open or finished
+	_-a_ (or "_all_") shows all events either open or finished
 	
 
-/event close \[name] \[result]
-Close event with \[name] and \[result] options. It could be sent in group chat or in a direct chat with Valera.
+*/event* close _NAME_ _RESULT_
+Close event with NAME and RESULT options. It could be sent in group chat or in a direct chat with Valera.
 You should have admin rights.
 Options are required:
-	name - Uniq name for existing event. Should be one word with chars and digits only 
-	result - Result of the event. Should be number
+	_NAME_ - Uniq name for existing event. Should be one word with chars and digits only 
+	_RESULT_ - Result of the event. Should be number
 
-/event result \[name]
+*/event* result _NAME_
 Show result for event with given name. It could be sent in group chat or in a direct chat with Valera.
 Option is required:
-	name - Uniq name for existing event. Should be one word with chars and digits only 
+	_NAME_ - Uniq name for existing event. Should be one word with chars and digits only 
 
-/event bet \[name] \[value]
+*/event* bet _NAME_ _VALUE_
 Make your bet with value. It could be sent in group chat or in a direct chat with Valera.
 Options are required:
-	name - Uniq name for existing event. Should be one word with chars and digits only 
-	value - Your bet for this event. Should be number
+	_NAME_ - Uniq name for existing event. Should be one word with chars and digits only 
+	_VALUE_ - Your bet for this event. Should be number
 
-/event share \[name]
+*/event* share _NAME_
 Share event in administered groups
 Option is required:
-	name - Uniq name for existing event. Should be one word with chars and digits only`
+	_NAME_ - Uniq name for existing event. Should be one word with chars and digits only`
 }
 
 // GetEventShareKeyboard returns message and keyboard for `/event share` cmd with groups
