@@ -65,9 +65,11 @@ You should have admin rights.
 Option is required:
 	name - Uniq name for new event. Should be one word with chars and digits only 
 
-/event list
-Show all event. It could be sent in group chat or in a direct chat with Valera.
-You should have admin rights.
+/event list \[-a | all]
+Show all active event. It could be sent in group chat or in a direct chat with Valera.
+Options:
+	-a (or "all") shows all events either open or finished
+	
 
 /event close \[name] \[result]
 Close event with \[name] and \[result] options. It could be sent in group chat or in a direct chat with Valera.
@@ -152,16 +154,23 @@ func GetEventResult(event model.Event) string {
 	return msg.String()
 }
 
-// GetEventShow returns message for `/event show` command
-func GetEventShow(events []model.Event) string {
+// GetEventList returns message for `/event list` command
+func GetEventList(events []model.Event, all bool) string {
 	var msg strings.Builder
 
 	if len(events) == 0 {
 		msg.WriteString("Event list is empty")
 	} else {
-		msg.WriteString("List of events:\n")
-		for _, e := range events {
-			msg.WriteString(fmt.Sprintf("`%v` %v\n", e.Name, e.Status))
+		if all {
+			msg.WriteString("List of all events:\n")
+			for _, e := range events {
+				msg.WriteString(fmt.Sprintf("`%v` %v\n", e.Name, e.Status))
+			}
+		} else {
+			msg.WriteString("Active events:\n")
+			for _, e := range events {
+				msg.WriteString(fmt.Sprintf("`%s`\n", e.Name))
+			}
 		}
 	}
 

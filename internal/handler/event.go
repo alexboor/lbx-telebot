@@ -33,15 +33,17 @@ func (h Handler) EventCmd(c tele.Context) error {
 
 	newEvent, ok := model.GetNewEvent(msg.Sender.ID, msg.Payload)
 	if !ok {
-		resp := message.GetEventInstruction()
-		_, err := c.Bot().Send(c.Sender(), resp, internal.MarkdownOpt)
+		_, err := c.Bot().Send(c.Sender(), message.GetEventInstruction(), internal.MarkdownOpt)
 		return err
 	}
 
 	administeredGroup := map[int64]string{}
 	// check admin rights
-	if newEvent.Cmd == model.EventCreate || newEvent.Cmd == model.EventClose || newEvent.Cmd == model.EventShow ||
+	if newEvent.Cmd == model.EventCreate ||
+		newEvent.Cmd == model.EventClose ||
+		//newEvent.Cmd == model.EventList  || // I think everyone could use the list commend
 		newEvent.Cmd == model.EventShare {
+
 		var isAdmin bool
 
 		for _, chatId := range h.Config.AllowedChats {
@@ -71,8 +73,8 @@ func (h Handler) EventCmd(c tele.Context) error {
 		return h.eventCreate(c, newEvent)
 	case model.EventClose:
 		return h.eventClose(c, newEvent)
-	case model.EventShow:
-		return h.eventShow(c)
+	case model.EventList:
+		return h.eventList(c, newEvent)
 	case model.EventResult:
 		return h.eventResult(c, newEvent)
 	case model.EventBet:
@@ -197,18 +199,20 @@ func (h Handler) eventClose(c tele.Context, newEvent model.Event) error {
 	return c.Send(resp, internal.MarkdownOpt)
 }
 
-// eventShow shows list of events
-func (h Handler) eventShow(c tele.Context) error {
+// eventList shows list of events
+func (h Handler) eventList(c tele.Context, e model.Event) error {
 	ctx := context.Background()
 
-	events, err := h.Storage.GetAllEvents(ctx)
+	showAll := len(e.Opts) > 1 && (e.Opts[1] == "-a" || e.Opts[1] == "all")
+
+	events, err := h.Storage.GetAllEvents(ctx, showAll)
 	if err != nil {
 		resp := message.GetErrorMessage("getting list of events")
 		_, err := c.Bot().Send(c.Sender(), resp, internal.MarkdownOpt)
 		return err
 	}
 
-	resp := message.GetEventShow(events)
+	resp := message.GetEventList(events, showAll)
 	_, err = c.Bot().Send(c.Sender(), resp, internal.MarkdownOpt)
 	return err
 }

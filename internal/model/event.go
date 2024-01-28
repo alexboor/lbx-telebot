@@ -13,7 +13,7 @@ const (
 
 	EventCreate = iota
 	EventClose
-	EventShow
+	EventList
 	EventBet
 	EventResult
 	EventShare
@@ -32,6 +32,7 @@ type (
 		FinishedAt     time.Time
 		WinnerIds      []int64
 		WinnerProfiles []Profile
+		Opts           []string
 	}
 )
 
@@ -48,7 +49,7 @@ func GetNewEvent(author int64, payload string) (Event, bool) {
 		if len(opts) != 2 {
 			return result, false
 		}
-		result = newEvent(EventCreate, opts[1], author)
+		result = newEvent(EventCreate, opts[1], author, opts)
 
 	case "close":
 		if len(opts) != 3 {
@@ -59,26 +60,26 @@ func GetNewEvent(author int64, payload string) (Event, bool) {
 		if err != nil {
 			return result, false
 		}
-		result = newEvent(EventClose, opts[1], author)
+		result = newEvent(EventClose, opts[1], author, opts)
 		result.Result = evRes
 
 	case "list":
-		if len(opts) != 1 {
+		if len(opts) > 2 {
 			return result, false
 		}
-		result = newEvent(EventShow, "", 0)
+		result = newEvent(EventList, "", 0, opts)
 
 	case "result":
 		if len(opts) != 2 {
 			return result, false
 		}
-		result = newEvent(EventResult, opts[1], 0)
+		result = newEvent(EventResult, opts[1], 0, opts)
 
 	case "share":
 		if len(opts) != 2 {
 			return result, false
 		}
-		result = newEvent(EventShare, opts[1], 0)
+		result = newEvent(EventShare, opts[1], 0, opts)
 
 	case "bet":
 		if len(opts) != 3 {
@@ -89,7 +90,7 @@ func GetNewEvent(author int64, payload string) (Event, bool) {
 		if err != nil {
 			return result, false
 		}
-		result = newEvent(EventBet, opts[1], author)
+		result = newEvent(EventBet, opts[1], author, opts)
 		result.Bet = bet
 
 	default:
@@ -123,13 +124,14 @@ func (e *Event) SetWinners(participants []Participant) {
 	}
 }
 
-func newEvent(cmd int, name string, author int64) Event {
+func newEvent(cmd int, name string, author int64, opts []string) Event {
 	return Event{
 		Cmd:       cmd,
 		Name:      name,
 		Status:    getStatus(cmd),
 		AuthorId:  author,
 		WinnerIds: []int64{},
+		Opts:      opts,
 	}
 }
 
