@@ -22,6 +22,7 @@ type Storage interface {
 	CloseEvent(ctx context.Context, event model.Event) error
 	GetProfilesById(ctx context.Context, ids []int64) ([]model.Profile, error)
 	GetProfileById(ctx context.Context, id int64) (model.Profile, error)
-	GetAllEvents(ctx context.Context) ([]model.Event, error)
+	GetAllEvents(ctx context.Context, all bool) ([]model.Event, error)
 	StoreBet(ctx context.Context, event model.Event, userId int64) error
+	RemoveBet(ctx context.Context, event model.Event, userId int64) error
 }

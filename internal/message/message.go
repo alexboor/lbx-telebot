@@ -2,12 +2,11 @@ package message
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
-
 	"github.com/alexboor/lbx-telebot/internal"
 	"github.com/alexboor/lbx-telebot/internal/wikimedia"
 	"gopkg.in/telebot.v3"
+	"strconv"
+	"strings"
 
 	"github.com/alexboor/lbx-telebot/internal/model"
 )
@@ -17,37 +16,37 @@ func GetHelp() string {
 	return `
 *Available commands:*
 
-/help or /h
+*/help* or */h*
 Show this help.
 
-/ver or /v
+*/ver* or */v*
 Show the current version.
 
-/profile \[name] \[period]
+*/profile* _NAME_ _PERIOD_
 Show the stored profile of the requester or another user.
 Options:
-	name - target chat participant
-	period - custom period of statistic (e.g. 7d, 72h), should be > 0
+	_NAME_ - target chat participant
+	_PERIOD_ - custom period of statistic (e.g. 7d, 72h), should be > 0
 
-/top \[num] \[period]
+*/top* _NUM_ _PERIOD_
 Show top users.
 Options:
-	num - custom number of positions to show, should be > 0
-	period - custom period of statistic (e.g. 7d, 72h), should be > 0
+	_NUM_ - custom number of positions to show, should be > 0
+	_PERIOD_ - custom period of statistic (e.g. 7d, 72h), should be > 0
 
-/bottom \[num] \[period]
+*/bottom* _NUM_ _PERIOD_
 Show reversed rating
 Options:
-	num - custom number of positions to show, should be > 0
-	period - custom period of statistic (e.g. 7d, 72h), should be > 0
+	_NUM_ - custom number of positions to show, should be > 0
+	_PERIOD_ - custom period of statistic (e.g. 7d, 72h), should be > 0
 
-/topic text
+*/topic* _text_
 Set new title in the group
 
-/event
+*/event*
 Command for event. Send command without params for detailed instructions.
 
-/today
+*/today*
 Returns what happened on this day
 
 I live here: https://github.com/alexboor/lbx-telebot
@@ -59,38 +58,54 @@ func GetEventInstruction() string {
 	return `
 Available commands:
 
-/event create \[name]
-Create new event with \[name] option. It could be sent in group chat or in a direct chat with Valera.
+*/event* create _NAME_
+Create new event with _NAME_ option. It could be sent in group chat or in a direct chat with Valera.
 You should have admin rights.
 Option is required:
-	name - Uniq name for new event. Should be one word with chars and digits only 
+	NAME - Uniq name for new event. Should be one word with chars and digits only 
 
-/event close \[name] \[result]
-Close event with \[name] and \[result] options. It could be sent in group chat or in a direct chat with Valera.
+*/event* list \[_-a_ | _all_]
+Show all active event. It could be sent in group chat or in a direct chat with Valera.
+Options:
+	_-a_ (or "_all_") shows all events either open or finished
+
+*/event* info _NAME_
+Show the event information and bets
+Option is required:
+	NAME - Uniq name for new event. Should be one word with chars and digits only 
+	
+*/event* my _NAME_
+Show your personal bet in the particular event
+Option is required:
+	NAME - Uniq name for new event. Should be one word with chars and digits only 
+
+*/event* my _NAME_ rm
+Remove your personal bet from the particular event
+Option is required:
+	NAME - Uniq name for new event. Should be one word with chars and digits only 
+
+*/event* close _NAME_ _RESULT_
+Close event with NAME and RESULT options. It could be sent in group chat or in a direct chat with Valera.
 You should have admin rights.
 Options are required:
-	name - Uniq name for existing event. Should be one word with chars and digits only 
-	result - Result of the event. Should be number
+	_NAME_ - Uniq name for existing event. Should be one word with chars and digits only 
+	_RESULT_ - Result of the event. Should be number
 
-/event show
-Show all event. It could be sent in group chat or in a direct chat with Valera.
-You should have admin rights.
-
-/event result \[name]
+*/event* result _NAME_
 Show result for event with given name. It could be sent in group chat or in a direct chat with Valera.
 Option is required:
-	name - Uniq name for existing event. Should be one word with chars and digits only 
+	_NAME_ - Uniq name for existing event. Should be one word with chars and digits only 
 
-/event bet \[name] \[value]
+*/event* bet _NAME_ _VALUE_
 Make your bet with value. It could be sent in group chat or in a direct chat with Valera.
 Options are required:
-	name - Uniq name for existing event. Should be one word with chars and digits only 
-	value - Your bet for this event. Should be number
+	_NAME_ - Uniq name for existing event. Should be one word with chars and digits only 
+	_VALUE_ - Your bet for this event. Should be number
 
-/event share \[name]
+*/event* share _NAME_
 Share event in administered groups
 Option is required:
-	name - Uniq name for existing event. Should be one word with chars and digits only`
+	_NAME_ - Uniq name for existing event. Should be one word with chars and digits only`
 }
 
 // GetEventShareKeyboard returns message and keyboard for `/event share` cmd with groups
@@ -152,17 +167,51 @@ func GetEventResult(event model.Event) string {
 	return msg.String()
 }
 
-// GetEventShow returns message for `/event show` command
-func GetEventShow(events []model.Event) string {
+// GetEventList returns message for `/event list` command
+func GetEventList(events []model.Event, all bool) string {
 	var msg strings.Builder
 
 	if len(events) == 0 {
 		msg.WriteString("Event list is empty")
 	} else {
-		msg.WriteString("List of events:\n")
-		for _, e := range events {
-			msg.WriteString(fmt.Sprintf("`%v` %v\n", e.Name, e.Status))
+		if all {
+			msg.WriteString("List of all events:\n")
+			for _, e := range events {
+				msg.WriteString(fmt.Sprintf("`%v` %v\n", e.Name, e.Status))
+			}
+		} else {
+			msg.WriteString("Active events:\n")
+			for _, e := range events {
+				msg.WriteString(fmt.Sprintf("`%s`\n", e.Name))
+			}
 		}
+	}
+
+	return msg.String()
+}
+
+func GetEventInfo(e model.Event, bets []string, winners []model.Profile) string {
+	var msg strings.Builder
+
+	msg.WriteString(fmt.Sprintf("`%s`\n", e.Name))
+	msg.WriteString(fmt.Sprintf("Status: %s\n", e.Status))
+	msg.WriteString(fmt.Sprintf("Started: %s\n", e.CreatedAt.Format("02-01-2006 15:04")))
+
+	if e.Status == "finished" {
+		msg.WriteString(fmt.Sprintf("Finished: %s\n", e.FinishedAt.Format("02-01-2006 15:04")))
+	}
+
+	msg.WriteString(fmt.Sprintf("---\nBets: %v\n", strings.Join(bets, ", ")))
+
+	if e.Status == "finished" {
+		var ww []string
+		for _, v := range winners {
+			ww = append(ww, getName(v))
+		}
+
+		msg.WriteString("---\n")
+		msg.WriteString(fmt.Sprintf("Result: %d\n", e.Result))
+		msg.WriteString(fmt.Sprintf("Winner: %s\n", strings.Join(ww, ", ")))
 	}
 
 	return msg.String()
@@ -178,6 +227,11 @@ func GetEventCreate(event model.Event) string {
 	var msg strings.Builder
 	msg.WriteString(fmt.Sprintf("Event `%v` has been created!", event.Name))
 	return msg.String()
+}
+
+// GetMyBets formats get my bet message
+func GetMyBets(event string, bet int64) string {
+	return fmt.Sprintf("Your bet for the event `%s` is %d\n", event, bet)
 }
 
 // CreateRating returns message with information about given profiles
