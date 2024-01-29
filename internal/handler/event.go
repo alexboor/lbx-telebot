@@ -264,6 +264,9 @@ func (h Handler) eventShare(c tele.Context, newEvent model.Event, administeredGr
 }
 
 // eventMy handle /event my command to work with own bets in the given event
+// This command can let see the requester own bet for the requested event and also remove it
+// The requester can see his bet from any events including finished, but can delete a bet
+// from opened event only.
 func (h Handler) eventMy(c tele.Context, e model.Event) error {
 	ctx := context.Background()
 	errMsg := "Incorrect event name _%s_. You can try use `/event list` command to see all ongoing events"
@@ -272,13 +275,12 @@ func (h Handler) eventMy(c tele.Context, e model.Event) error {
 		name := e.Opts[1]
 		event, _ := h.Storage.GetEventByName(ctx, e.Opts[1])
 		if event.Name == "" {
-			_ = c.Send(fmt.Sprintf(errMsg, e.Opts[1]), internal.MarkdownOpt)
+			_ = c.Send(fmt.Sprintf(errMsg, name), internal.MarkdownOpt)
 			return errors.New("wrong event in /event my command")
 		}
 
 		if len(e.Opts) == 2 {
 			//case /event my e.Opts[1]
-
 			parts, err := h.Storage.GetEventParticipantByEventName(ctx, name)
 			if err != nil {
 				return err
@@ -304,7 +306,7 @@ func (h Handler) eventMy(c tele.Context, e model.Event) error {
 			if err := c.Send(message.GetMyBets(name, bet)); err != nil {
 				return err
 			}
-
+			return nil
 		}
 
 		if len(e.Opts) == 3 && e.Opts[2] == "rm" {
