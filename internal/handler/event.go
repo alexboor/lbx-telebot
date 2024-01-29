@@ -273,14 +273,14 @@ func (h Handler) eventMy(c tele.Context, e model.Event) error {
 
 	if len(e.Opts) > 1 {
 		name := e.Opts[1]
-		event, _ := h.Storage.GetEventByName(ctx, e.Opts[1])
+		event, _ := h.Storage.GetEventByName(ctx, name)
 		if event.Name == "" {
 			_ = c.Send(fmt.Sprintf(errMsg, name), internal.MarkdownOpt)
 			return errors.New("wrong event in /event my command")
 		}
 
+		//case /event my e.Opts[1]
 		if len(e.Opts) == 2 {
-			//case /event my e.Opts[1]
 			parts, err := h.Storage.GetEventParticipantByEventName(ctx, name)
 			if err != nil {
 				return err
@@ -309,13 +309,22 @@ func (h Handler) eventMy(c tele.Context, e model.Event) error {
 			return nil
 		}
 
+		//case /event my eventname rm
 		if len(e.Opts) == 3 && e.Opts[2] == "rm" {
-			//case /event my e.Opts[1] rm
-			//TODO do not delete bet from finished event
-			fmt.Println("remove my bet from event ", e.Opts[1])
+			if event.Status == "opened" {
+				if err := h.Storage.RemoveBet(ctx, event, c.Sender().ID); err != nil {
+					return err
+				}
+				if err := c.Send("You bet has been removed"); err != nil {
+					return err
+				}
+				return nil
+			}
 
+			if err := c.Send("You can't remove your bet from finished event"); err != nil {
+				return err
+			}
 		}
-
 	}
 
 	return nil
