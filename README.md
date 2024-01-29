@@ -64,6 +64,13 @@ Show all active event. It could be sent in group chat or in a direct chat with V
 Options:
 - _-a_ (or "_all_") shows all events either open or finished
 
+`/event` info _NAME_
+
+Show the event information and bets
+
+Option is required:
+- NAME - Uniq name for new event. Should be one word with chars and digits only
+
 `/event` my _NAME_
 
 Show your personal bet in the particular event

@@ -84,6 +84,8 @@ func (h Handler) EventCmd(c tele.Context) error {
 		return h.eventShare(c, newEvent, administeredGroup)
 	case model.EventMy:
 		return h.eventMy(c, newEvent)
+	case model.EventInfo:
+		return h.eventInfo(c, newEvent)
 	}
 
 	resp := message.GetEventInstruction()
@@ -325,6 +327,46 @@ func (h Handler) eventMy(c tele.Context, e model.Event) error {
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+// eventInfo handles /event info command to show information and bets in the event
+func (h Handler) eventInfo(c tele.Context, e model.Event) error {
+	ctx := context.Background()
+
+	event, err := h.Storage.GetEventByName(ctx, e.Name)
+	if errors.Is(err, pgx.ErrNoRows) {
+		if err := c.Send(fmt.Sprintf("Event `%s` not found", e.Name)); err != nil {
+			return err
+		}
+		return err
+	}
+	if err != nil {
+		return err
+	}
+
+	parts, err := h.Storage.GetEventParticipantByEventName(ctx, e.Name)
+	if err != nil {
+		return err
+	}
+
+	var bets []string
+	for _, p := range parts {
+		bets = append(bets, fmt.Sprintf("%d", p.Bet))
+	}
+
+	//fmt.Printf("winersIds: %v", e)
+
+	winners, err := h.Storage.GetProfilesById(ctx, event.WinnerIds)
+	if err != nil {
+		return err
+	}
+
+	resp := message.GetEventInfo(event, bets, winners)
+	if err := c.Send(resp, internal.MarkdownOpt); err != nil {
+		return err
 	}
 
 	return nil

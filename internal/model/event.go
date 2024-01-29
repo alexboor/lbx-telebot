@@ -18,6 +18,7 @@ const (
 	EventResult
 	EventShare
 	EventMy
+	EventInfo
 )
 
 type (
@@ -99,6 +100,12 @@ func GetNewEvent(author int64, payload string) (Event, bool) {
 			return result, false
 		}
 		result = newEvent(EventMy, opts[1], author, opts)
+
+	case "info":
+		if len(opts) != 2 {
+			return result, false
+		}
+		result = newEvent(EventInfo, opts[1], 0, opts)
 
 	default:
 		return result, false

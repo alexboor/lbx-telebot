@@ -2,12 +2,11 @@ package message
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
-
 	"github.com/alexboor/lbx-telebot/internal"
 	"github.com/alexboor/lbx-telebot/internal/wikimedia"
 	"gopkg.in/telebot.v3"
+	"strconv"
+	"strings"
 
 	"github.com/alexboor/lbx-telebot/internal/model"
 )
@@ -69,6 +68,11 @@ Option is required:
 Show all active event. It could be sent in group chat or in a direct chat with Valera.
 Options:
 	_-a_ (or "_all_") shows all events either open or finished
+
+*/event* info _NAME_
+Show the event information and bets
+Option is required:
+	NAME - Uniq name for new event. Should be one word with chars and digits only 
 	
 */event* my _NAME_
 Show your personal bet in the particular event
@@ -181,6 +185,33 @@ func GetEventList(events []model.Event, all bool) string {
 				msg.WriteString(fmt.Sprintf("`%s`\n", e.Name))
 			}
 		}
+	}
+
+	return msg.String()
+}
+
+func GetEventInfo(e model.Event, bets []string, winners []model.Profile) string {
+	var msg strings.Builder
+
+	msg.WriteString(fmt.Sprintf("`%s`\n", e.Name))
+	msg.WriteString(fmt.Sprintf("Status: %s\n", e.Status))
+	msg.WriteString(fmt.Sprintf("Started: %s\n", e.CreatedAt.Format("02-01-2006 15:04")))
+
+	if e.Status == "finished" {
+		msg.WriteString(fmt.Sprintf("Finished: %s\n", e.FinishedAt.Format("02-01-2006 15:04")))
+	}
+
+	msg.WriteString(fmt.Sprintf("---\nBets: %v\n", strings.Join(bets, ", ")))
+
+	if e.Status == "finished" {
+		var ww []string
+		for _, v := range winners {
+			ww = append(ww, getName(v))
+		}
+
+		msg.WriteString("---\n")
+		msg.WriteString(fmt.Sprintf("Result: %d\n", e.Result))
+		msg.WriteString(fmt.Sprintf("Winner: %s\n", strings.Join(ww, ", ")))
 	}
 
 	return msg.String()
