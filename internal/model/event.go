@@ -17,6 +17,7 @@ const (
 	EventBet
 	EventResult
 	EventShare
+	EventMy
 )
 
 type (
@@ -92,6 +93,12 @@ func GetNewEvent(author int64, payload string) (Event, bool) {
 		}
 		result = newEvent(EventBet, opts[1], author, opts)
 		result.Bet = bet
+
+	case "my":
+		if len(opts) < 2 || len(opts) > 3 {
+			return result, false
+		}
+		result = newEvent(EventMy, opts[1], author, opts)
 
 	default:
 		return result, false

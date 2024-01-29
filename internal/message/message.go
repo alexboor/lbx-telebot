@@ -189,6 +189,11 @@ func GetEventCreate(event model.Event) string {
 	return msg.String()
 }
 
+// GetMyBets formats get my bet message
+func GetMyBets(event string, bet int64) string {
+	return fmt.Sprintf("Your bet for the event `%s` is %d\n", event, bet)
+}
+
 // CreateRating returns message with information about given profiles
 func CreateRating(profiles []model.Profile, opt model.Option) string {
 	if len(profiles) == 0 {

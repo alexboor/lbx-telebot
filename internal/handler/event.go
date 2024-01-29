@@ -16,13 +16,14 @@ import (
 
 // EventCmd is handler for internal.EventCmd command
 //
-//	It could have variants of payload
-//	- create with name of event
-//	- close with name of event and result
-//	- list to get all events with statuses
-//	- bet with name of event and value of bet
-//	- result to get result of closed event
-//	- share to send event to administered group or channel
+//		It could have variants of payload
+//		- create with name of event
+//		- close with name of event and result
+//		- list to get all events with statuses
+//		- bet with name of event and value of bet
+//		- result to get result of closed event
+//		- share to send event to administered group or channel
+//	 - my to handle own bets in the given event
 func (h Handler) EventCmd(c tele.Context) error {
 	msg := c.Message()
 
@@ -81,6 +82,8 @@ func (h Handler) EventCmd(c tele.Context) error {
 		return h.eventBet(c, newEvent, msg.Sender.ID)
 	case model.EventShare:
 		return h.eventShare(c, newEvent, administeredGroup)
+	case model.EventMy:
+		return h.eventMy(c, newEvent)
 	}
 
 	resp := message.GetEventInstruction()
@@ -242,8 +245,6 @@ func (h Handler) eventResult(c tele.Context, newEvent model.Event) error {
 func (h Handler) eventBet(c tele.Context, newEvent model.Event, userId int64) error {
 	ctx := context.Background()
 
-	fmt.Printf("Sender: %v\n", c.Sender())
-
 	if err := h.Storage.StoreBet(ctx, newEvent, userId); err != nil {
 		resp := message.GetErrorMessage("saving bet")
 		_, err := c.Bot().Send(c.Sender(), resp, internal.MarkdownOpt)
@@ -260,4 +261,60 @@ func (h Handler) eventShare(c tele.Context, newEvent model.Event, administeredGr
 	resp, keyboard := message.GetEventShareKeyboard(newEvent.Name, administeredGroup)
 	_, err := c.Bot().Send(c.Sender(), resp, keyboard)
 	return err
+}
+
+// eventMy handle /event my command to work with own bets in the given event
+func (h Handler) eventMy(c tele.Context, e model.Event) error {
+	ctx := context.Background()
+	errMsg := "Incorrect event name _%s_. You can try use `/event list` command to see all ongoing events"
+
+	if len(e.Opts) > 1 {
+		name := e.Opts[1]
+		event, _ := h.Storage.GetEventByName(ctx, e.Opts[1])
+		if event.Name == "" {
+			_ = c.Send(fmt.Sprintf(errMsg, e.Opts[1]), internal.MarkdownOpt)
+			return errors.New("wrong event in /event my command")
+		}
+
+		if len(e.Opts) == 2 {
+			//case /event my e.Opts[1]
+
+			parts, err := h.Storage.GetEventParticipantByEventName(ctx, name)
+			if err != nil {
+				return err
+			}
+
+			var bet int64
+			var isSet = false
+			for _, p := range parts {
+				if p.UserId == c.Sender().ID {
+					bet = p.Bet
+					isSet = true
+					break
+				}
+			}
+
+			if isSet == false {
+				if err := c.Send("You haven't been placing a bet in the requesting event"); err != nil {
+					return err
+				}
+				return nil
+			}
+
+			if err := c.Send(message.GetMyBets(name, bet)); err != nil {
+				return err
+			}
+
+		}
+
+		if len(e.Opts) == 3 && e.Opts[2] == "rm" {
+			//case /event my e.Opts[1] rm
+			//TODO do not delete bet from finished event
+			fmt.Println("remove my bet from event ", e.Opts[1])
+
+		}
+
+	}
+
+	return nil
 }
