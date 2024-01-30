@@ -42,12 +42,10 @@ jobs:
             type=semver,pattern={{version}}
 
       - name: Info
-        env:
-          IMG_TAG: ${{ steps.vars.outputs.tag }}
         run: |
           echo "github.ref = ${{ github.ref }}"
           echo "github.ref_type = ${{ github.ref_type }}"
-          echo "IMG_TAG = ${{ IMG_TAG }}"
+          echo "github.ref_name = ${{github.ref_name}}"
 
       - name: Login to dockerhub
         uses: docker/login-action@v2
