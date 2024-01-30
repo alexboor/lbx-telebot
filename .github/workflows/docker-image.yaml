@@ -4,7 +4,10 @@ on:
     branches:
       - 'main'
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+    branches:
+      - '*'
 
 jobs:
   build:
@@ -26,10 +29,11 @@ jobs:
             
 
       - name: Checkout
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3
 
       - name: Info
-        run: echo "params ${{ github.event.base_ref }}, ${{ github.ref_type }}, ${{ github.ref }}"
+        run: |
+          echo "github.ref = {{ $github.ref }}"
 
       - name: Docker metadata
         id: metadata
@@ -38,11 +42,10 @@ jobs:
           images: ${{ env.IMG_NAME }}
           tags: |
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}.{{minor}}.{{build}}
 
       - name: Login to dockerhub
         uses: docker/login-action@v2
+        if: ${{ github.ref_type == 'tag' }}
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -51,8 +54,8 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          push: true
-          tags: boorick/lbx-telebot:latest
+          push: ${{ github.event.base_ref == 'refs/heads/main' && github.ref_type == 'tag' }}
+          tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
 
       - name: Deploy to the server
@@ -66,8 +69,8 @@ jobs:
             ${{ secrets.SSH_HOST }}
           options: |
             -u ${{ secrets.SSH_USER }}
-            -e img=boorick/lbx-telebot
-            -e tag=latest
+            -e img=${{ steps.metadata.outputs.tags }}
+#            -e tag=latest
 
       - name: Start notification
         uses: appleboy/telegram-action@master

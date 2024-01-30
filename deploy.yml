@@ -6,7 +6,7 @@
     - name: Create/Update a container
       docker_container:
         name: lbx-telebot
-        image: '{{img}}:{{tag}}'
+        image: '{{img}}'
         env_file: /home/sta/envs/telebot.env
         recreate: yes
         pull: true
