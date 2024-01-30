@@ -12,7 +12,7 @@ FROM scratch
 
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build /build/app /telebot
-RUN echo "$version > /telebot.version"
+RUN echo $version > /telebot.version"
 WORKDIR /
 ENTRYPOINT ["/telebot"]
 
