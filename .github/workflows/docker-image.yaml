@@ -15,7 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       IMG_NAME: ${{ github.repository }}
-      IMG_TAG: ${{ steps.vars.outputs.tag }}
+
+
     steps:
       - name: Start notification
         uses: appleboy/telegram-action@master
@@ -41,6 +42,8 @@ jobs:
             type=semver,pattern={{version}}
 
       - name: Info
+        env:
+          IMG_TAG: ${{ steps.vars.outputs.tag }}
         run: |
           echo "github.ref = ${{ github.ref }}"
           echo "github.ref_type = ${{ github.ref_type }}"
