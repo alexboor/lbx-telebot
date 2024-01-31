@@ -4,7 +4,7 @@ on:
     branches:
       - 'main'
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+'
   pull_request:
     branches:
       - '*'
@@ -63,8 +63,9 @@ jobs:
         with:
           context: .
           push: ${{ github.event.base_ref == 'refs/heads/main' && github.ref_type == 'tag' }}
-          build-args: 1.1.1
-          tags: ${{ steps.metadata.outputs.tags }}
+          name:
+          build-args: ${{github.ref_name}}
+          tags: boorick/lbx-telebot:${{github.ref_name}}
           labels: ${{ steps.metadata.outputs.labels }}
 
       - name: Deploy to the server
@@ -79,7 +80,7 @@ jobs:
             ${{ secrets.SSH_HOST }}
           options: |
             -u ${{ secrets.SSH_USER }}
-            -e img=${{ steps.metadata.outputs.tags }}
+            -e img=boorick/lbx-telebot:${{github.ref_name}}
 #            -e tag=latest
 
       - name: Start notification
