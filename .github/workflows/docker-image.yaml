@@ -80,8 +80,8 @@ jobs:
             ${{ secrets.SSH_HOST }}
           options: |
             -u ${{ secrets.SSH_USER }}
-            -e img=boorick/lbx-telebot:${{github.ref_name}}
-#            -e tag=latest
+            -e img=boorick/lbx-telebot
+            -e tag=${{github.ref_name}}
 
       - name: Start notification
         uses: appleboy/telegram-action@master
