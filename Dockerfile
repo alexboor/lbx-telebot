@@ -15,7 +15,7 @@ COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifica
 COPY --from=build /build/app /app
 COPY --from=build /build/app.version /app.version
 WORKDIR /
-ENTRYPOINT ["/telebot"]
+ENTRYPOINT ["/app"]
 
 
 
