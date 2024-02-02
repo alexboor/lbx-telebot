@@ -3,7 +3,7 @@ package internal
 import "time"
 
 const (
-	Version = "2.8.0"
+	VersionFile = "app.version"
 
 	Timeout     = 10 * time.Second
 	RatingLimit = 5
