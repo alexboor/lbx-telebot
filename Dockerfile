@@ -1,5 +1,5 @@
 FROM golang:1.21-alpine as build
-ARG version=0.0.0
+ARG VERSION=0.0.0
 
 WORKDIR /build
 RUN apk add --no-cache ca-certificates git
@@ -7,7 +7,7 @@ COPY . .
 RUN go mod vendor
 # TODO add testing
 RUN go build -mod vendor -ldflags "$LD_FLAGS" -o app cmd/main.go;
-RUN echo "$version" >> app.version
+RUN echo "$VERSION" >> app.version
 
 FROM scratch
 

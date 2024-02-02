@@ -64,7 +64,7 @@ jobs:
           context: .
           push: ${{ github.event.base_ref == 'refs/heads/main' && github.ref_type == 'tag' }}
           name:
-          build-args: ${{github.ref_name}}
+          build-args: VERSION=${{github.ref_name}}
           tags: boorick/lbx-telebot:${{github.ref_name}}
           labels: ${{ steps.metadata.outputs.labels }}
 
