@@ -7,7 +7,7 @@ import (
     "fmt"
     "log"
     "net/http"
-    // "os"
+    "os"
 
     "github.com/alexboor/lbx-telebot/internal"
     "github.com/alexboor/lbx-telebot/internal/cfg"
@@ -189,6 +189,7 @@ func main() {
                 if entity.Type == tele.EntityMention && entity.User != nil && entity.User.ID == bot.Me.ID {
                     question := c.Message().Text
                     log.Printf("Mention detected, querying ChatGPT with question: %s", question)
+                    log.Printf("Using ChatGPT token: %s", config.ChatGPTToken)
                     chatGPTResponse, err := queryChatGPT(config.ChatGPTToken, question)
                     if err != nil {
                         log.Printf("failed to query ChatGPT: %s", err)
