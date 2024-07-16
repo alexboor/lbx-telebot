@@ -1,109 +1,192 @@
 package main
 
 import (
-	"context"
-	"log"
-	"log/slog"
+    "bytes"
+    "context"
+    "encoding/json"
+    "fmt"
+    "log"
+    "net/http"
+  //  "os"
 
-	"github.com/alexboor/lbx-telebot/internal"
-	"github.com/alexboor/lbx-telebot/internal/cfg"
-	"github.com/alexboor/lbx-telebot/internal/handler"
-	"github.com/alexboor/lbx-telebot/internal/model"
-	"github.com/alexboor/lbx-telebot/internal/storage/postgres"
-	tele "gopkg.in/telebot.v3"
+    "github.com/alexboor/lbx-telebot/internal"
+    "github.com/alexboor/lbx-telebot/internal/cfg"
+    "github.com/alexboor/lbx-telebot/internal/handler"
+    "github.com/alexboor/lbx-telebot/internal/model"
+    "github.com/alexboor/lbx-telebot/internal/storage/postgres"
+    tele "gopkg.in/telebot.v3"
+    "github.com/joho/godotenv"
 )
 
+type ChatGPTRequest struct {
+    Model    string   `json:"model"`
+    Messages []Message `json:"messages"`
+}
+
+type Message struct {
+    Role    string `json:"role"`
+    Content string `json:"content"`
+}
+
+type ChatGPTResponse struct {
+    Choices []struct {
+        Message struct {
+            Content string `json:"content"`
+        } `json:"message"`
+    } `json:"choices"`
+}
+
+func queryChatGPT(token, prompt string) (string, error) {
+    url := "https://api.openai.com/v1/chat/completions"
+    reqBody := ChatGPTRequest{
+        Model: "gpt-3.5-turbo",
+        Messages: []Message{
+            {
+                Role:    "user",
+                Content: prompt,
+            },
+        },
+    }
+    jsonReq, err := json.Marshal(reqBody)
+    if err != nil {
+        return "", err
+    }
+
+    req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonReq))
+    if err != nil {
+        return "", err
+    }
+
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("Authorization", "Bearer "+token)
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        return "", err
+    }
+    defer resp.Body.Close()
+
+    var chatGPTResp ChatGPTResponse
+    if err := json.NewDecoder(resp.Body).Decode(&chatGPTResp); err != nil {
+        return "", err
+    }
+
+    if len(chatGPTResp.Choices) > 0 {
+        return chatGPTResp.Choices[0].Message.Content, nil
+    }
+
+    return "", fmt.Errorf("no response from ChatGPT")
+}
+
 func main() {
-	cfg.InitLogger()
+    // Загружаем переменные окружения из файла .env
+    if err := godotenv.Load(); err != nil {
+        log.Fatalf("Error loading .env file")
+    }
 
-	slog.Info("starting...")
-	defer slog.Info("finished")
+    cfg.InitLogger()
 
-	config := cfg.New()
-	ctx := context.Background()
+    log.Println("starting...")
+    defer log.Println("finished")
 
-	pg, err := postgres.New(ctx, config.Dsn)
-	if err != nil {
-		log.Fatalf("error connection to db: %s\n", err)
-	}
+    config := cfg.New()
+    ctx := context.Background()
 
-	h := handler.New(pg, config)
-	if err != nil {
-		log.Fatalf("error create handler: %s\n", err)
-	}
+    pg, err := postgres.New(ctx, config.Dsn)
+    if err != nil {
+        log.Fatalf("error connection to db: %s\n", err)
+    }
 
-	opts := tele.Settings{
-		Token:  config.Token,
-		Poller: &tele.LongPoller{Timeout: internal.Timeout},
-	}
+    h := handler.New(pg, config)
+    if err != nil {
+        log.Fatalf("error create handler: %s\n", err)
+    }
 
-	bot, err := tele.NewBot(opts)
-	if err != nil {
-		log.Fatalf("error create bot instance: %s\n", err)
-	}
+    opts := tele.Settings{
+        Token:  config.Token,
+        Poller: &tele.LongPoller{Timeout: internal.Timeout},
+    }
 
-	// getting information about profiles
-	uniqUserIds := map[int64]struct{}{}
-	for _, chatId := range config.AllowedChats {
-		profileIds, err := pg.GetProfileIdsByChatId(ctx, chatId)
-		if err != nil {
-			slog.Error("failed to get profile ids for chat",
-				slog.Any("chat", chatId), slog.Any("error", err))
-			continue
-		}
+    bot, err := tele.NewBot(opts)
+    if err != nil {
+        log.Fatalf("error create bot instance: %s\n", err)
+    }
 
-		for _, id := range profileIds {
-			if _, ok := uniqUserIds[id]; !ok {
-				uniqUserIds[id] = struct{}{}
-			} else {
-				continue
-			}
+    // getting information about profiles
+    uniqUserIds := map[int64]struct{}{}
+    for _, chatId := range config.AllowedChats {
+        profileIds, err := pg.GetProfileIdsByChatId(ctx, chatId)
+        if err != nil {
+            log.Printf("failed to get profile ids for chat %d: %s", chatId, err)
+            continue
+        }
 
-			profile, err := bot.ChatMemberOf(tele.ChatID(chatId), &tele.User{ID: id})
-			if err != nil {
-				slog.Error("failed to get profile info for id",
-					slog.Any("id", id), slog.Any("error", err))
-				continue
-			}
+        for _, id := range profileIds {
+            if _, ok := uniqUserIds[id]; !ok {
+                uniqUserIds[id] = struct{}{}
+            } else {
+                continue
+            }
 
-			p := model.NewProfile(profile.User)
-			if err := pg.StoreProfile(ctx, p); err != nil {
-				slog.Error("failed to store profile with id",
-					slog.Any("id", profile.User.ID), slog.Any("error", err))
-			}
-		}
-	}
-	uniqUserIds = nil
+            profile, err := bot.ChatMemberOf(tele.ChatID(chatId), &tele.User{ID: id})
+            if err != nil {
+                log.Printf("failed to get profile info for id %d: %s", id, err)
+                continue
+            }
 
-	// Commands handlers
-	// Should not handle anything except commands in private messages
-	bot.Handle(internal.HelpCmd, h.Help)
-	bot.Handle(internal.HCmd, h.Help)
-	bot.Handle(internal.StartCmd, h.Help)
-	bot.Handle(internal.VerCmd, h.Ver)
-	bot.Handle(internal.VCmd, h.Ver)
+            p := model.NewProfile(profile.User)
+            if err := pg.StoreProfile(ctx, p); err != nil {
+                log.Printf("failed to store profile with id %d: %s", profile.User.ID, err)
+            }
+        }
+    }
+    uniqUserIds = nil
 
-	bot.Handle(internal.TopCmd, h.GetTop)
-	bot.Handle(internal.BottomCmd, h.GetBottom)
-	bot.Handle(internal.ProfileCmd, h.GetProfileCount)
-	bot.Handle(internal.TopicCmd, h.SetTopic)
-	bot.Handle(internal.EventCmd, h.EventCmd)
-	bot.Handle(internal.TodayCmd, h.TodayCmd)
+    // Commands handlers
+    bot.Handle(internal.HelpCmd, h.Help)
+    bot.Handle(internal.HCmd, h.Help)
+    bot.Handle(internal.StartCmd, h.Help)
+    bot.Handle(internal.VerCmd, h.Ver)
+    bot.Handle(internal.VCmd, h.Ver)
 
-	// Button handlers
-	bot.Handle("\f"+internal.ShareBtn, h.EventCallback)
+    bot.Handle(internal.TopCmd, h.GetTop)
+    bot.Handle(internal.BottomCmd, h.GetBottom)
+    bot.Handle(internal.ProfileCmd, h.GetProfileCount)
+    bot.Handle(internal.TopicCmd, h.SetTopic)
+    bot.Handle(internal.EventCmd, h.EventCmd)
+    bot.Handle(internal.TodayCmd, h.TodayCmd)
 
-	// Handle only messages in allowed groups (msg.Chat.Type = "group" | "supergroup")
-	// private messages handles only by command endpoint handler
-	bot.Handle(tele.OnText, h.Count)
-	bot.Handle(tele.OnAudio, h.Count)
-	bot.Handle(tele.OnVideo, h.Count)
-	bot.Handle(tele.OnAnimation, h.Count)
-	bot.Handle(tele.OnDocument, h.Count)
-	bot.Handle(tele.OnPhoto, h.Count)
-	bot.Handle(tele.OnVoice, h.Count)
-	bot.Handle(tele.OnSticker, h.Count)
+    // Button handlers
+    bot.Handle("\f"+internal.ShareBtn, h.EventCallback)
 
-	slog.Info("up and listen")
-	bot.Start()
+    // Handle only messages in allowed groups (msg.Chat.Type = "group" | "supergroup")
+    // private messages handles only by command endpoint handler
+    bot.Handle(tele.OnText, func(c tele.Context) error {
+        h.Count(c)
+        if c.Message().Entities != nil {
+            for _, entity := range c.Message().Entities {
+                if entity.Type == tele.EntityMention && entity.User != nil && entity.User.ID == bot.Me.ID {
+                    question := c.Message().Text
+                    chatGPTResponse, err := queryChatGPT(config.ChatGPTToken, question)
+                    if err != nil {
+                        log.Printf("failed to query ChatGPT: %s", err)
+                        return err
+                    }
+                    return c.Send(chatGPTResponse)
+                }
+            }
+        }
+        return nil
+    })
+    bot.Handle(tele.OnAudio, h.Count)
+    bot.Handle(tele.OnVideo, h.Count)
+    bot.Handle(tele.OnAnimation, h.Count)
+    bot.Handle(tele.OnDocument, h.Count)
+    bot.Handle(tele.OnPhoto, h.Count)
+    bot.Handle(tele.OnVoice, h.Count)
+    bot.Handle(tele.OnSticker, h.Count)
+
+    log.Println("up and listen")
+    bot.Start()
 }

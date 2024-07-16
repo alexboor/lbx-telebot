@@ -6,6 +6,7 @@ require (
 	github.com/go-resty/resty/v2 v2.10.0
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/jdkato/prose/v2 v2.0.0
+	github.com/joho/godotenv v1.5.1
 	github.com/wcharczuk/go-chart/v2 v2.1.1
 	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b
 	gopkg.in/telebot.v3 v3.1.3
