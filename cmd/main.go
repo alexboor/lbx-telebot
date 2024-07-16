@@ -7,7 +7,6 @@ import (
     "fmt"
     "log"
     "net/http"
-    "os"
 
     "github.com/alexboor/lbx-telebot/internal"
     "github.com/alexboor/lbx-telebot/internal/cfg"
