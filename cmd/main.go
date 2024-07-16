@@ -7,7 +7,7 @@ import (
     "fmt"
     "log"
     "net/http"
-  //  "os"
+    "os"
 
     "github.com/alexboor/lbx-telebot/internal"
     "github.com/alexboor/lbx-telebot/internal/cfg"
@@ -37,6 +37,7 @@ type ChatGPTResponse struct {
 }
 
 func queryChatGPT(token, prompt string) (string, error) {
+    log.Printf("Sending request to ChatGPT with prompt: %s", prompt)
     url := "https://api.openai.com/v1/chat/completions"
     reqBody := ChatGPTRequest{
         Model: "gpt-4o",
@@ -49,11 +50,13 @@ func queryChatGPT(token, prompt string) (string, error) {
     }
     jsonReq, err := json.Marshal(reqBody)
     if err != nil {
+        log.Printf("Error marshalling request body: %s", err)
         return "", err
     }
 
     req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonReq))
     if err != nil {
+        log.Printf("Error creating new HTTP request: %s", err)
         return "", err
     }
 
@@ -63,19 +66,23 @@ func queryChatGPT(token, prompt string) (string, error) {
     client := &http.Client{}
     resp, err := client.Do(req)
     if err != nil {
+        log.Printf("Error sending request to ChatGPT: %s", err)
         return "", err
     }
     defer resp.Body.Close()
 
     var chatGPTResp ChatGPTResponse
     if err := json.NewDecoder(resp.Body).Decode(&chatGPTResp); err != nil {
+        log.Printf("Error decoding ChatGPT response: %s", err)
         return "", err
     }
 
     if len(chatGPTResp.Choices) > 0 {
+        log.Printf("Received response from ChatGPT: %s", chatGPTResp.Choices[0].Message.Content)
         return chatGPTResp.Choices[0].Message.Content, nil
     }
 
+    log.Printf("No response from ChatGPT")
     return "", fmt.Errorf("no response from ChatGPT")
 }
 
@@ -93,10 +100,12 @@ func main() {
     config := cfg.New()
     ctx := context.Background()
 
+    log.Println("Initializing PostgreSQL connection")
     pg, err := postgres.New(ctx, config.Dsn)
     if err != nil {
         log.Fatalf("error connection to db: %s\n", err)
     }
+    log.Println("Connected to PostgreSQL")
 
     h := handler.New(pg, config)
     if err != nil {
@@ -112,10 +121,17 @@ func main() {
     if err != nil {
         log.Fatalf("error create bot instance: %s\n", err)
     }
+    log.Println("Bot instance created")
 
     // getting information about profiles
     uniqUserIds := map[int64]struct{}{}
     for _, chatId := range config.AllowedChats {
+        // Convert old group ID to supergroup ID if needed
+        if chatId > 0 {
+            chatId = -100 + chatId
+        }
+
+        log.Printf("Fetching profile IDs for chat: %d", chatId)
         profileIds, err := pg.GetProfileIdsByChatId(ctx, chatId)
         if err != nil {
             log.Printf("failed to get profile ids for chat %d: %s", chatId, err)
@@ -138,6 +154,8 @@ func main() {
             p := model.NewProfile(profile.User)
             if err := pg.StoreProfile(ctx, p); err != nil {
                 log.Printf("failed to store profile with id %d: %s", profile.User.ID, err)
+            } else {
+                log.Printf("Stored profile with id %d", profile.User.ID)
             }
         }
     }
@@ -168,11 +186,13 @@ func main() {
             for _, entity := range c.Message().Entities {
                 if entity.Type == tele.EntityMention && entity.User != nil && entity.User.ID == bot.Me.ID {
                     question := c.Message().Text
+                    log.Printf("Mention detected, querying ChatGPT with question: %s", question)
                     chatGPTResponse, err := queryChatGPT(config.ChatGPTToken, question)
                     if err != nil {
                         log.Printf("failed to query ChatGPT: %s", err)
                         return err
                     }
+                    log.Printf("Sending response to chat: %s", chatGPTResponse)
                     return c.Send(chatGPTResponse)
                 }
             }
