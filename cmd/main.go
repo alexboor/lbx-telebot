@@ -128,7 +128,7 @@ func main() {
     for _, chatId := range config.AllowedChats {
         // Convert old group ID to supergroup ID if needed
         if chatId > 0 {
-            chatId = -100 + chatId
+            chatId = -1000000000000 + chatId
         }
 
         log.Printf("Fetching profile IDs for chat: %d", chatId)
