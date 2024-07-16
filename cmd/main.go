@@ -40,7 +40,7 @@ func queryChatGPT(token, prompt string) (string, error) {
     log.Printf("Sending request to ChatGPT with prompt: %s", prompt)
     url := "https://api.openai.com/v1/chat/completions"
     reqBody := ChatGPTRequest{
-        Model: "gpt-4o",
+        Model: "gpt-3.5-turbo",
         Messages: []Message{
             {
                 Role:    "user",
@@ -109,106 +109,4 @@ func main() {
 
     h := handler.New(pg, config)
     if err != nil {
-        log.Fatalf("error create handler: %s\n", err)
-    }
-
-    opts := tele.Settings{
-        Token:  config.Token,
-        Poller: &tele.LongPoller{Timeout: internal.Timeout},
-    }
-
-    bot, err := tele.NewBot(opts)
-    if err != nil {
-        log.Fatalf("error create bot instance: %s\n", err)
-    }
-    log.Println("Bot instance created")
-
-    // getting information about profiles
-    uniqUserIds := map[int64]struct{}{}
-    for _, chatId := range config.AllowedChats {
-        // Convert old group ID to supergroup ID if needed
-        if chatId > 0 {
-            chatId = -1000000000000 + chatId
-        }
-
-        log.Printf("Fetching profile IDs for chat: %d", chatId)
-        profileIds, err := pg.GetProfileIdsByChatId(ctx, chatId)
-        if err != nil {
-            log.Printf("failed to get profile ids for chat %d: %s", chatId, err)
-            continue
-        }
-
-        for _, id := range profileIds {
-            if _, ok := uniqUserIds[id]; !ok {
-                uniqUserIds[id] = struct{}{}
-            } else {
-                continue
-            }
-
-            profile, err := bot.ChatMemberOf(tele.ChatID(chatId), &tele.User{ID: id})
-            if err != nil {
-                log.Printf("failed to get profile info for id %d: %s", id, err)
-                continue
-            }
-
-            p := model.NewProfile(profile.User)
-            if err := pg.StoreProfile(ctx, p); err != nil {
-                log.Printf("failed to store profile with id %d: %s", profile.User.ID, err)
-            } else {
-                log.Printf("Stored profile with id %d", profile.User.ID)
-            }
-        }
-    }
-    uniqUserIds = nil
-
-    // Commands handlers
-    bot.Handle(internal.HelpCmd, h.Help)
-    bot.Handle(internal.HCmd, h.Help)
-    bot.Handle(internal.StartCmd, h.Help)
-    bot.Handle(internal.VerCmd, h.Ver)
-    bot.Handle(internal.VCmd, h.Ver)
-
-    bot.Handle(internal.TopCmd, h.GetTop)
-    bot.Handle(internal.BottomCmd, h.GetBottom)
-    bot.Handle(internal.ProfileCmd, h.GetProfileCount)
-    bot.Handle(internal.TopicCmd, h.SetTopic)
-    bot.Handle(internal.EventCmd, h.EventCmd)
-    bot.Handle(internal.TodayCmd, h.TodayCmd)
-
-    // Button handlers
-    bot.Handle("\f"+internal.ShareBtn, h.EventCallback)
-
-    // Handle only messages in allowed groups (msg.Chat.Type = "group" | "supergroup")
-    // private messages handles only by command endpoint handler
-    bot.Handle(tele.OnText, func(c tele.Context) error {
-        h.Count(c)
-        log.Printf("Received text message: %s", c.Message().Text)
-        if c.Message().Entities != nil {
-            for _, entity := range c.Message().Entities {
-                log.Printf("Entity detected: %v", entity)
-                if entity.Type == tele.EntityMention && entity.User != nil && entity.User.ID == bot.Me.ID {
-                    question := c.Message().Text
-                    log.Printf("Mention detected, querying ChatGPT with question: %s", question)
-                    chatGPTResponse, err := queryChatGPT(config.ChatGPTToken, question)
-                    if err != nil {
-                        log.Printf("failed to query ChatGPT: %s", err)
-                        return err
-                    }
-                    log.Printf("Sending response to chat: %s", chatGPTResponse)
-                    return c.Send(chatGPTResponse)
-                }
-            }
-        }
-        return nil
-    })
-    bot.Handle(tele.OnAudio, h.Count)
-    bot.Handle(tele.OnVideo, h.Count)
-    bot.Handle(tele.OnAnimation, h.Count)
-    bot.Handle(tele.OnDocument, h.Count)
-    bot.Handle(tele.OnPhoto, h.Count)
-    bot.Handle(tele.OnVoice, h.Count)
-    bot.Handle(tele.OnSticker, h.Count)
-
-    log.Println("up and listen")
-    bot.Start()
-}
+        log.Fatalf("error cre
