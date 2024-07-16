@@ -39,7 +39,7 @@ type ChatGPTResponse struct {
 func queryChatGPT(token, prompt string) (string, error) {
     url := "https://api.openai.com/v1/chat/completions"
     reqBody := ChatGPTRequest{
-        Model: "gpt-3.5-turbo",
+        Model: "gpt-4o",
         Messages: []Message{
             {
                 Role:    "user",
