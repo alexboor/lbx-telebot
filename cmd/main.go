@@ -41,7 +41,7 @@ func queryChatGPT(token, prompt string) (string, error) {
     slog.Debug("Sending request to ChatGPT", "prompt", prompt)
     url := "https://api.openai.com/v1/chat/completions"
     reqBody := ChatGPTRequest{
-        Model: "gpt-3.5-turbo",
+        Model: "gpt-4o",
         Messages: []Message{
             {
                 Role:    "user",
