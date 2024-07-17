@@ -222,6 +222,7 @@ func main() {
                 }
             }
         }
+        slog.Debug("No relevant entity detected")
         return nil
     })
     bot.Handle(tele.OnAudio, h.Count)
