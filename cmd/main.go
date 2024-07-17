@@ -204,6 +204,7 @@ func main() {
                         slog.Error("failed to query ChatGPT", "error", err)
                         return err
                     }
+                    slog.Debug("Received response from ChatGPT", "response", chatGPTResponse)
                     slog.Debug("Sending response to chat", "response", chatGPTResponse)
                     err = c.Send(chatGPTResponse)
                     if err != nil {
