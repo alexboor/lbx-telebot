@@ -199,12 +199,19 @@ func main() {
                     question := c.Message().Text
                     slog.Debug("Mention detected, querying ChatGPT", "question", question)
                     slog.Debug("Using ChatGPT token", "token", config.ChatGPTToken)
+
+                    // New log message to confirm function entry
+                    slog.Debug("Calling queryChatGPT")
+
                     chatGPTResponse, err := queryChatGPT(config.ChatGPTToken, question)
                     if err != nil {
                         slog.Error("failed to query ChatGPT", "error", err)
                         return err
                     }
+
+                    // New log message to confirm response received
                     slog.Debug("Received response from ChatGPT", "response", chatGPTResponse)
+
                     slog.Debug("Sending response to chat", "response", chatGPTResponse)
                     err = c.Send(chatGPTResponse)
                     if err != nil {
