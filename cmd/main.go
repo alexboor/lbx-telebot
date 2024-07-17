@@ -41,7 +41,7 @@ func queryChatGPT(token, prompt string) (string, error) {
     slog.Debug("Sending request to ChatGPT", "prompt", prompt)
     url := "https://api.openai.com/v1/chat/completions"
     reqBody := ChatGPTRequest{
-        Model: "gpt-4o",
+        Model: "gpt-3.5-turbo",
         Messages: []Message{
             {
                 Role:    "user",
@@ -195,6 +195,8 @@ func main() {
         if c.Message().Entities != nil {
             for _, entity := range c.Message().Entities {
                 slog.Debug("Entity detected", "entity", entity)
+                // Log the entity details
+                slog.Debug("Entity details", "type", entity.Type, "user", entity.User)
                 if entity.Type == tele.EntityMention && entity.User != nil && entity.User.ID == bot.Me.ID {
                     question := c.Message().Text
                     slog.Debug("Mention detected, querying ChatGPT", "question", question)
