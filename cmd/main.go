@@ -5,7 +5,7 @@ import (
     "context"
     "encoding/json"
     "fmt"
-    "log/slog"
+    "log"
     "net/http"
     "os"
 
@@ -16,6 +16,7 @@ import (
     "github.com/alexboor/lbx-telebot/internal/storage/postgres"
     tele "gopkg.in/telebot.v3"
     "github.com/joho/godotenv"
+    "log/slog"
 )
 
 type ChatGPTRequest struct {
@@ -93,7 +94,7 @@ func queryChatGPT(token, prompt string) (string, error) {
 func main() {
     // Загружаем переменные окружения из файла .env
     if err := godotenv.Load(); err != nil {
-        slog.Fatal("Error loading .env file", "error", err)
+        log.Fatalf("Error loading .env file: %s", err)
     }
 
     cfg.InitLogger()
@@ -111,13 +112,13 @@ func main() {
     slog.Info("Initializing PostgreSQL connection")
     pg, err := postgres.New(ctx, config.Dsn)
     if err != nil {
-        slog.Fatal("error connection to db", "error", err)
+        log.Fatalf("error connection to db: %s", err)
     }
     slog.Info("Connected to PostgreSQL")
 
     h := handler.New(pg, config)
     if err != nil {
-        slog.Fatal("error create handler", "error", err)
+        log.Fatalf("error create handler: %s", err)
     }
 
     optsTele := tele.Settings{
@@ -127,7 +128,7 @@ func main() {
 
     bot, err := tele.NewBot(optsTele)
     if err != nil {
-        slog.Fatal("error create bot instance", "error", err)
+        log.Fatalf("error create bot instance: %s", err)
     }
     slog.Info("Bot instance created")
 
