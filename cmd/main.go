@@ -5,9 +5,9 @@ import (
     "context"
     "encoding/json"
     "fmt"
-    "log"
+    "log/slog"
     "net/http"
-    // "os"
+    "os"
 
     "github.com/alexboor/lbx-telebot/internal"
     "github.com/alexboor/lbx-telebot/internal/cfg"
@@ -37,7 +37,7 @@ type ChatGPTResponse struct {
 }
 
 func queryChatGPT(token, prompt string) (string, error) {
-    log.Printf("Sending request to ChatGPT with prompt: %s", prompt)
+    slog.Debug("Sending request to ChatGPT", "prompt", prompt)
     url := "https://api.openai.com/v1/chat/completions"
     reqBody := ChatGPTRequest{
         Model: "gpt-3.5-turbo",
@@ -50,13 +50,13 @@ func queryChatGPT(token, prompt string) (string, error) {
     }
     jsonReq, err := json.Marshal(reqBody)
     if err != nil {
-        log.Printf("Error marshalling request body: %s", err)
+        slog.Error("Error marshalling request body", "error", err)
         return "", err
     }
 
     req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonReq))
     if err != nil {
-        log.Printf("Error creating new HTTP request: %s", err)
+        slog.Error("Error creating new HTTP request", "error", err)
         return "", err
     }
 
@@ -66,66 +66,70 @@ func queryChatGPT(token, prompt string) (string, error) {
     client := &http.Client{}
     resp, err := client.Do(req)
     if err != nil {
-        log.Printf("Error sending request to ChatGPT: %s", err)
+        slog.Error("Error sending request to ChatGPT", "error", err)
         return "", err
     }
     defer resp.Body.Close()
 
-    log.Printf("Request sent to ChatGPT, awaiting response...")
+    slog.Debug("Request sent to ChatGPT, awaiting response...")
 
     var chatGPTResp ChatGPTResponse
     if err := json.NewDecoder(resp.Body).Decode(&chatGPTResp); err != nil {
-        log.Printf("Error decoding ChatGPT response: %s", err)
+        slog.Error("Error decoding ChatGPT response", "error", err)
         return "", err
     }
 
-    log.Printf("Received response from ChatGPT: %v", chatGPTResp)
+    slog.Debug("Received response from ChatGPT", "response", chatGPTResp)
 
     if len(chatGPTResp.Choices) > 0 {
-        log.Printf("ChatGPT response content: %s", chatGPTResp.Choices[0].Message.Content)
+        slog.Debug("ChatGPT response content", "content", chatGPTResp.Choices[0].Message.Content)
         return chatGPTResp.Choices[0].Message.Content, nil
     }
 
-    log.Printf("No response from ChatGPT")
+    slog.Error("No response from ChatGPT")
     return "", fmt.Errorf("no response from ChatGPT")
 }
 
 func main() {
     // Загружаем переменные окружения из файла .env
     if err := godotenv.Load(); err != nil {
-        log.Fatalf("Error loading .env file")
+        slog.Fatal("Error loading .env file", "error", err)
     }
 
     cfg.InitLogger()
 
-    log.Println("starting...")
-    defer log.Println("finished")
+    opts := &slog.HandlerOptions{AddSource: true, Level: slog.LevelDebug}
+    logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+    slog.SetDefault(logger)
+
+    slog.Info("starting...")
+    defer slog.Info("finished")
 
     config := cfg.New()
     ctx := context.Background()
 
-    log.Println("Initializing PostgreSQL connection")
+    slog.Info("Initializing PostgreSQL connection")
     pg, err := postgres.New(ctx, config.Dsn)
     if err != nil {
-        log.Fatalf("error connection to db: %s\n", err)
+        slog.Fatal("error connection to db", "error", err)
     }
-    log.Println("Connected to PostgreSQL")
+    slog.Info("Connected to PostgreSQL")
 
     h := handler.New(pg, config)
     if err != nil {
-        log.Fatalf("error create handler: %s\n", err)
+        slog.Fatal("error create handler", "error", err)
     }
 
-    opts := tele.Settings{
+    optsTele := tele.Settings{
         Token:  config.Token,
         Poller: &tele.LongPoller{Timeout: internal.Timeout},
     }
 
-    bot, err := tele.NewBot(opts)
+    bot, err := tele.NewBot(optsTele)
     if err != nil {
-        log.Fatalf("error create bot instance: %s\n", err)
+        slog.Fatal("error create bot instance", "error", err)
     }
-    log.Println("Bot instance created")
+    slog.Info("Bot instance created")
 
     // getting information about profiles
     uniqUserIds := map[int64]struct{}{}
@@ -135,10 +139,10 @@ func main() {
             chatId = -1000000000000 + chatId
         }
 
-        log.Printf("Fetching profile IDs for chat: %d", chatId)
+        slog.Debug("Fetching profile IDs for chat", "chatId", chatId)
         profileIds, err := pg.GetProfileIdsByChatId(ctx, chatId)
         if err != nil {
-            log.Printf("failed to get profile ids for chat %d: %s", chatId, err)
+            slog.Warn("failed to get profile ids for chat", "chatId", chatId, "error", err)
             continue
         }
 
@@ -151,15 +155,15 @@ func main() {
 
             profile, err := bot.ChatMemberOf(tele.ChatID(chatId), &tele.User{ID: id})
             if err != nil {
-                log.Printf("failed to get profile info for id %d: %s", id, err)
+                slog.Warn("failed to get profile info for id", "id", id, "error", err)
                 continue
             }
 
             p := model.NewProfile(profile.User)
             if err := pg.StoreProfile(ctx, p); err != nil {
-                log.Printf("failed to store profile with id %d: %s", profile.User.ID, err)
+                slog.Warn("failed to store profile with id", "id", profile.User.ID, "error", err)
             } else {
-                log.Printf("Stored profile with id %d", profile.User.ID)
+                slog.Debug("Stored profile with id", "id", profile.User.ID)
             }
         }
     }
@@ -186,23 +190,23 @@ func main() {
     // private messages handles only by command endpoint handler
     bot.Handle(tele.OnText, func(c tele.Context) error {
         h.Count(c)
-        log.Printf("Received text message: %s", c.Message().Text)
+        slog.Debug("Received text message", "message", c.Message().Text)
         if c.Message().Entities != nil {
             for _, entity := range c.Message().Entities {
-                log.Printf("Entity detected: %v", entity)
+                slog.Debug("Entity detected", "entity", entity)
                 if entity.Type == tele.EntityMention && entity.User != nil && entity.User.ID == bot.Me.ID {
                     question := c.Message().Text
-                    log.Printf("Mention detected, querying ChatGPT with question: %s", question)
-                    log.Printf("Using ChatGPT token: %s", config.ChatGPTToken)
+                    slog.Debug("Mention detected, querying ChatGPT", "question", question)
+                    slog.Debug("Using ChatGPT token", "token", config.ChatGPTToken)
                     chatGPTResponse, err := queryChatGPT(config.ChatGPTToken, question)
                     if err != nil {
-                        log.Printf("failed to query ChatGPT: %s", err)
+                        slog.Error("failed to query ChatGPT", "error", err)
                         return err
                     }
-                    log.Printf("Sending response to chat: %s", chatGPTResponse)
+                    slog.Debug("Sending response to chat", "response", chatGPTResponse)
                     err = c.Send(chatGPTResponse)
                     if err != nil {
-                        log.Printf("failed to send response: %s", err)
+                        slog.Error("failed to send response", "error", err)
                         return err
                     }
                     return nil
@@ -219,6 +223,6 @@ func main() {
     bot.Handle(tele.OnVoice, h.Count)
     bot.Handle(tele.OnSticker, h.Count)
 
-    log.Println("up and listen")
+    slog.Info("up and listen")
     bot.Start()
 }
