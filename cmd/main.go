@@ -17,7 +17,6 @@ import (
 )
 
 func main() {
-    // Загружаем переменные окружения из файла .env
     if err := godotenv.Load(); err != nil {
         log.Fatalf("Error loading .env file: %s", err)
     }
@@ -116,7 +115,6 @@ func main() {
     // private messages handles only by command endpoint handler
     bot.Handle(tele.OnText, func(c tele.Context) error {
         h.Count(c)
-        slog.Debug("Received text message", "message", c.Message().Text)
         respond := false
         if c.Message().Entities != nil {
             for _, entity := range c.Message().Entities {
@@ -146,14 +144,10 @@ func main() {
             chatGPTResponse, err := handler.QueryChatGPT(config.ChatGPTToken, question)
             if err != nil {
                 slog.Error("failed to query ChatGPT", "error", err)
-                return err
+                return c.Send("Sorry, there was an error processing your request.")
             }
             slog.Debug("Received response from ChatGPT", "response", chatGPTResponse)
-            err = c.Reply(chatGPTResponse)
-            if err != nil {
-                slog.Error("failed to send response", "error", err)
-                return err
-            }
+            return c.Reply(chatGPTResponse)
         } else {
             slog.Debug("No relevant entity or reply detected")
         }
@@ -167,6 +161,4 @@ func main() {
     bot.Handle(tele.OnVoice, h.Count)
     bot.Handle(tele.OnSticker, h.Count)
 
-    slog.Info("up and listen")
-    bot.Start()
-}
+    slog
