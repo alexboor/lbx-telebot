@@ -8,6 +8,7 @@ import (
     "log"
     "net/http"
     "os"
+    "strings"
 
     "github.com/alexboor/lbx-telebot/internal"
     "github.com/alexboor/lbx-telebot/internal/cfg"
@@ -192,39 +193,46 @@ func main() {
     bot.Handle(tele.OnText, func(c tele.Context) error {
         h.Count(c)
         slog.Debug("Received text message", "message", c.Message().Text)
+        respond := false
         if c.Message().Entities != nil {
             for _, entity := range c.Message().Entities {
                 slog.Debug("Entity detected", "entity", entity)
-                // Log the entity details
                 slog.Debug("Entity details", "type", entity.Type, "user", entity.User)
-                if entity.Type == tele.EntityMention && entity.User != nil && entity.User.ID == bot.Me.ID {
-                    question := c.Message().Text
-                    slog.Debug("Mention detected, querying ChatGPT", "question", question)
-                    slog.Debug("Using ChatGPT token", "token", config.ChatGPTToken)
-
-                    // New log message to confirm function entry
-                    slog.Debug("Calling queryChatGPT")
-
-                    chatGPTResponse, err := queryChatGPT(config.ChatGPTToken, question)
-                    if err != nil {
-                        slog.Error("failed to query ChatGPT", "error", err)
-                        return err
+                if entity.Type == tele.EntityMention {
+                    // Log mention details
+                    slog.Debug("Mention detected, details", "mention", c.Message().Text[entity.Offset:entity.Offset+entity.Length])
+                    // Check if the mention is for the bot
+                    if strings.Contains(c.Message().Text[entity.Offset:entity.Offset+entity.Length], bot.Me.Username) {
+                        respond = true
+                        break
                     }
-
-                    // New log message to confirm response received
-                    slog.Debug("Received response from ChatGPT", "response", chatGPTResponse)
-
-                    slog.Debug("Sending response to chat", "response", chatGPTResponse)
-                    err = c.Send(chatGPTResponse)
-                    if err != nil {
-                        slog.Error("failed to send response", "error", err)
-                        return err
-                    }
-                    return nil
                 }
             }
         }
-        slog.Debug("No relevant entity detected")
+        if c.Message().ReplyTo != nil {
+            // Log reply details
+            slog.Debug("Reply detected", "reply_to", c.Message().ReplyTo.ID)
+            if c.Message().ReplyTo.Sender.ID == bot.Me.ID {
+                respond = true
+            }
+        }
+        if respond {
+            question := c.Message().Text
+            slog.Debug("Detected a message for ChatGPT, querying", "question", question)
+            chatGPTResponse, err := queryChatGPT(config.ChatGPTToken, question)
+            if err != nil {
+                slog.Error("failed to query ChatGPT", "error", err)
+                return err
+            }
+            slog.Debug("Received response from ChatGPT", "response", chatGPTResponse)
+            err = c.Reply(chatGPTResponse)
+            if err != nil {
+                slog.Error("failed to send response", "error", err)
+                return err
+            }
+        } else {
+            slog.Debug("No relevant entity or reply detected")
+        }
         return nil
     })
     bot.Handle(tele.OnAudio, h.Count)
