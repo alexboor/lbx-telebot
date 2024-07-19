@@ -97,10 +97,13 @@ where event_name = $1`
 }
 
 // GetAllEvents returns all events
-func (s *Storage) GetAllEvents(ctx context.Context) ([]model.Event, error) {
-	query := `
-select name, created_at, finished_at, author, result, status, winners
-from event`
+func (s *Storage) GetAllEvents(ctx context.Context, all bool) ([]model.Event, error) {
+	query := `select name, created_at, finished_at, author, result, status, winners
+					from event where status = 'opened'`
+	if all {
+		query = `select name, created_at, finished_at, author, result, status, winners
+					from event`
+	}
 
 	rows, err := s.Pool.Query(ctx, query)
 	if err != nil {
@@ -179,4 +182,11 @@ func (s *Storage) GetEventWithWinnersByName(ctx context.Context, name string) (m
 	}
 
 	return event, nil
+}
+
+// RemoveBet for the particular user from the given event
+func (s *Storage) RemoveBet(ctx context.Context, event model.Event, userId int64) error {
+	query := `DELETE FROM event_participant WHERE event_name = $1 AND user_id = $2`
+	_, err := s.Pool.Exec(ctx, query, event.Name, userId)
+	return err
 }

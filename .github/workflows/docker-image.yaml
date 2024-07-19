@@ -5,6 +5,9 @@ on:
       - 'main'
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+    branches:
+      - '*'
 
 jobs:
   build:
@@ -12,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       IMG_NAME: ${{ github.repository }}
+
+
     steps:
       - name: Start notification
         uses: appleboy/telegram-action@master
@@ -26,37 +31,46 @@ jobs:
             
 
       - name: Checkout
-        uses: actions/checkout@v3.1.0
-
-      - name: Info
-        run: echo "params ${{ github.event.base_ref }}, ${{ github.ref_type }}, ${{ github.ref }}"
+        uses: actions/checkout@v3
 
       - name: Docker metadata
         id: metadata
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.IMG_NAME }}
+          images: boorick/lbx-telebot
           tags: |
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}.{{minor}}.{{build}}
+
+      - name: Info
+        run: |
+          echo "github.ref = ${{ github.ref }}"
+          echo "github.ref_type = ${{ github.ref_type }}"
+          echo "github.ref_name = ${{github.ref_name}}"
 
       - name: Login to dockerhub
         uses: docker/login-action@v2
+        if: ${{ github.ref_type == 'tag' }}
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - id: pre-step
+        shell: bash
+        run: echo "echo "release-version=$(echo ${GITHUB_REF:10})" >> $GITHUB_OUTPUT"
 
       - name: Build and Push
         uses: docker/build-push-action@v4
         with:
           context: .
-          push: true
-          tags: boorick/lbx-telebot:latest
+          push: ${{ github.event.base_ref == 'refs/heads/main' && github.ref_type == 'tag' }}
+          name:
+          build-args: VERSION=${{github.ref_name}}
+          tags: boorick/lbx-telebot:${{github.ref_name}}
           labels: ${{ steps.metadata.outputs.labels }}
 
       - name: Deploy to the server
         uses: dawidd6/action-ansible-playbook@v2
+        if: ${{ github.ref_type == 'tag' }}
         with:
           playbook: deploy.yml
           directory: ./
@@ -67,7 +81,7 @@ jobs:
           options: |
             -u ${{ secrets.SSH_USER }}
             -e img=boorick/lbx-telebot
-            -e tag=latest
+            -e tag=${{github.ref_name}}
 
       - name: Start notification
         uses: appleboy/telegram-action@master

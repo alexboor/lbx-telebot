@@ -3,20 +3,10 @@
   become: yes
 
   tasks:
-#    - name: Remove existing image
-#      docker_image:
-#        state: absent
-#        name: '{{img}}:{{tag}}'
-#        force: force_absent
-#
-#    - name: Pull an fresh image
-#      docker_image:
-#        name: '{{img}}:{{tag}}'
-
     - name: Create/Update a container
       docker_container:
         name: lbx-telebot
         image: '{{img}}:{{tag}}'
-        env_file: /var/tmp/telebot.env
+        env_file: /home/sta/envs/telebot.env
         recreate: yes
         pull: true

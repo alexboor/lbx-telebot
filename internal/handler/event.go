@@ -16,13 +16,14 @@ import (
 
 // EventCmd is handler for internal.EventCmd command
 //
-//	It could have variants of payload
-//	- create with name of event
-//	- close with name of event and result
-//	- show to get all events with statuses
-//	- bet with name of event and value of bet
-//	- result to get result of closed event
-//	- share to send event to administered group or channel
+//		It could have variants of payload
+//		- create with name of event
+//		- close with name of event and result
+//		- list to get all events with statuses
+//		- bet with name of event and value of bet
+//		- result to get result of closed event
+//		- share to send event to administered group or channel
+//	 - my to handle own bets in the given event
 func (h Handler) EventCmd(c tele.Context) error {
 	msg := c.Message()
 
@@ -33,15 +34,17 @@ func (h Handler) EventCmd(c tele.Context) error {
 
 	newEvent, ok := model.GetNewEvent(msg.Sender.ID, msg.Payload)
 	if !ok {
-		resp := message.GetEventInstruction()
-		_, err := c.Bot().Send(c.Sender(), resp, internal.MarkdownOpt)
+		_, err := c.Bot().Send(c.Sender(), message.GetEventInstruction(), internal.MarkdownOpt)
 		return err
 	}
 
 	administeredGroup := map[int64]string{}
 	// check admin rights
-	if newEvent.Cmd == model.EventCreate || newEvent.Cmd == model.EventClose || newEvent.Cmd == model.EventShow ||
+	if newEvent.Cmd == model.EventCreate ||
+		newEvent.Cmd == model.EventClose ||
+		//newEvent.Cmd == model.EventList  || // I think everyone could use the list commend
 		newEvent.Cmd == model.EventShare {
+
 		var isAdmin bool
 
 		for _, chatId := range h.Config.AllowedChats {
@@ -71,14 +74,18 @@ func (h Handler) EventCmd(c tele.Context) error {
 		return h.eventCreate(c, newEvent)
 	case model.EventClose:
 		return h.eventClose(c, newEvent)
-	case model.EventShow:
-		return h.eventShow(c)
+	case model.EventList:
+		return h.eventList(c, newEvent)
 	case model.EventResult:
 		return h.eventResult(c, newEvent)
 	case model.EventBet:
 		return h.eventBet(c, newEvent, msg.Sender.ID)
 	case model.EventShare:
 		return h.eventShare(c, newEvent, administeredGroup)
+	case model.EventMy:
+		return h.eventMy(c, newEvent)
+	case model.EventInfo:
+		return h.eventInfo(c, newEvent)
 	}
 
 	resp := message.GetEventInstruction()
@@ -197,19 +204,21 @@ func (h Handler) eventClose(c tele.Context, newEvent model.Event) error {
 	return c.Send(resp, internal.MarkdownOpt)
 }
 
-// eventShow shows list of events
-func (h Handler) eventShow(c tele.Context) error {
+// eventList shows list of events
+func (h Handler) eventList(c tele.Context, e model.Event) error {
 	ctx := context.Background()
 
-	events, err := h.Storage.GetAllEvents(ctx)
+	showAll := len(e.Opts) > 1 && (e.Opts[1] == "-a" || e.Opts[1] == "all")
+
+	events, err := h.Storage.GetAllEvents(ctx, showAll)
 	if err != nil {
 		resp := message.GetErrorMessage("getting list of events")
 		_, err := c.Bot().Send(c.Sender(), resp, internal.MarkdownOpt)
 		return err
 	}
 
-	resp := message.GetEventShow(events)
-	_, err = c.Bot().Send(c.Sender(), resp, internal.MarkdownOpt)
+	resp := message.GetEventList(events, showAll)
+	err = c.Send(resp, internal.MarkdownOpt)
 	return err
 }
 
@@ -245,7 +254,7 @@ func (h Handler) eventBet(c tele.Context, newEvent model.Event, userId int64) er
 	}
 
 	resp := fmt.Sprintf("Your bet `%v` for event `%v` is accepted!", newEvent.Bet, newEvent.Name)
-	_, err := c.Bot().Send(c.Sender(), resp, internal.MarkdownOpt)
+	err := c.Send(resp, internal.MarkdownOpt)
 	return err
 }
 
@@ -254,4 +263,111 @@ func (h Handler) eventShare(c tele.Context, newEvent model.Event, administeredGr
 	resp, keyboard := message.GetEventShareKeyboard(newEvent.Name, administeredGroup)
 	_, err := c.Bot().Send(c.Sender(), resp, keyboard)
 	return err
+}
+
+// eventMy handle /event my command to work with own bets in the given event
+// This command can let see the requester own bet for the requested event and also remove it
+// The requester can see his bet from any events including finished, but can delete a bet
+// from opened event only.
+func (h Handler) eventMy(c tele.Context, e model.Event) error {
+	ctx := context.Background()
+	errMsg := "Incorrect event name _%s_. You can try use `/event list` command to see all ongoing events"
+
+	if len(e.Opts) > 1 {
+		name := e.Opts[1]
+		event, _ := h.Storage.GetEventByName(ctx, name)
+		if event.Name == "" {
+			_ = c.Send(fmt.Sprintf(errMsg, name), internal.MarkdownOpt)
+			return errors.New("wrong event in /event my command")
+		}
+
+		//case /event my e.Opts[1]
+		if len(e.Opts) == 2 {
+			parts, err := h.Storage.GetEventParticipantByEventName(ctx, name)
+			if err != nil {
+				return err
+			}
+
+			var bet int64
+			var isSet = false
+			for _, p := range parts {
+				if p.UserId == c.Sender().ID {
+					bet = p.Bet
+					isSet = true
+					break
+				}
+			}
+
+			if isSet == false {
+				if err := c.Send("You haven't been placing a bet in the requesting event"); err != nil {
+					return err
+				}
+				return nil
+			}
+
+			if err := c.Send(message.GetMyBets(name, bet)); err != nil {
+				return err
+			}
+			return nil
+		}
+
+		//case /event my eventname rm
+		if len(e.Opts) == 3 && e.Opts[2] == "rm" {
+			if event.Status == "opened" {
+				if err := h.Storage.RemoveBet(ctx, event, c.Sender().ID); err != nil {
+					return err
+				}
+				if err := c.Send("You bet has been removed"); err != nil {
+					return err
+				}
+				return nil
+			}
+
+			if err := c.Send("You can't remove your bet from finished event"); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// eventInfo handles /event info command to show information and bets in the event
+func (h Handler) eventInfo(c tele.Context, e model.Event) error {
+	ctx := context.Background()
+
+	event, err := h.Storage.GetEventByName(ctx, e.Name)
+	if errors.Is(err, pgx.ErrNoRows) {
+		if err := c.Send(fmt.Sprintf("Event `%s` not found", e.Name)); err != nil {
+			return err
+		}
+		return err
+	}
+	if err != nil {
+		return err
+	}
+
+	parts, err := h.Storage.GetEventParticipantByEventName(ctx, e.Name)
+	if err != nil {
+		return err
+	}
+
+	var bets []string
+	for _, p := range parts {
+		bets = append(bets, fmt.Sprintf("%d", p.Bet))
+	}
+
+	//fmt.Printf("winersIds: %v", e)
+
+	winners, err := h.Storage.GetProfilesById(ctx, event.WinnerIds)
+	if err != nil {
+		return err
+	}
+
+	resp := message.GetEventInfo(event, bets, winners)
+	if err := c.Send(resp, internal.MarkdownOpt); err != nil {
+		return err
+	}
+
+	return nil
 }
