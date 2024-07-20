@@ -114,12 +114,17 @@ func (h Handler) HandleChatGPT(c tele.Context) {
 			if err != nil {
 				slog.Error("error processing a request: ", err)
 			}
+			return
 		}
 		slog.Debug("Received response from ChatGPT", "response", chatGPTResponse)
-		err = c.Reply(chatGPTResponse)
-		if err != nil {
-			slog.Error(fmt.Sprintf("error to reply: %s", err))
+
+		if len(chatGPTResponse) > 1 {
+			err = c.Reply(chatGPTResponse)
+			if err != nil {
+				slog.Error("error to reply into chat: ", "error", err)
+			}
 		}
+
 	} else {
 		slog.Debug("No relevant entity or reply detected")
 	}
