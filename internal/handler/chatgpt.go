@@ -78,7 +78,6 @@ func QueryChatGPT(token, prompt string) (string, error) {
 		return chatGPTResp.Choices[0].Message.Content, nil
 	}
 
-	slog.Error("No response from ChatGPT")
 	return "", fmt.Errorf("no response from ChatGPT")
 }
 
@@ -88,12 +87,7 @@ func (h Handler) HandleChatGPT(c tele.Context) {
 
 	if c.Message().Entities != nil {
 		for _, entity := range c.Message().Entities {
-			slog.Debug("Entity detected", "entity", entity)
-			slog.Debug("Entity details", "type", entity.Type, "user", entity.User)
 			if entity.Type == tele.EntityMention {
-				// Log mention details
-				slog.Debug("Mention detected, details", "mention", c.Message().Text[entity.Offset:entity.Offset+entity.Length])
-				// Check if the mention is for the bot
 				if strings.Contains(c.Message().Text[entity.Offset:entity.Offset+entity.Length], c.Bot().Me.Username) {
 					respond = true
 					break
@@ -118,7 +112,7 @@ func (h Handler) HandleChatGPT(c tele.Context) {
 			slog.Error("failed to query ChatGPT", "error", err)
 			err := c.Send("Sorry, there was an error processing your request.")
 			if err != nil {
-				slog.Error(fmt.Sprintf("error processing a request: %s", err))
+				slog.Error("error processing a request: ", err)
 			}
 		}
 		slog.Debug("Received response from ChatGPT", "response", chatGPTResponse)
