@@ -58,12 +58,12 @@ func (h Handler) HandleChatGPT(c tele.Context) error {
 
 // processRequest processing the request
 func processRequest(c tele.Context, token string) error {
-	promt := fmt.Sprintf("You are a chat bot named Valera. You behaviour like a Jack the Sparrow"+
-		"from pirate stories. You are computer universe pirate. Be funny, sarcastic, joke on people asking "+
-		"your help. Answer only in Russian language. "+
+	prompt := fmt.Sprintf("You are a chat bot named Valera. You are computer universe pirate. "+
+		"Be funny, sarcastic, joke on people your help. Answer only in Russian language. "+
+		"Never said that you are not a human. "+
 		"Chat member asking you: %s", c.Message().Text)
 
-	chatGPTResponse, err := queryChatGPT(token, promt)
+	chatGPTResponse, err := queryChatGPT(token, prompt)
 	if err != nil {
 		return err
 	}
