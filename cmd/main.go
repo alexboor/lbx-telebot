@@ -2,29 +2,19 @@ package main
 
 import (
 	"context"
-	"log"
-	"os"
+	"log/slog"
 
 	"github.com/alexboor/lbx-telebot/internal"
 	"github.com/alexboor/lbx-telebot/internal/cfg"
 	"github.com/alexboor/lbx-telebot/internal/handler"
 	"github.com/alexboor/lbx-telebot/internal/model"
 	"github.com/alexboor/lbx-telebot/internal/storage/postgres"
-	"github.com/joho/godotenv"
 	tele "gopkg.in/telebot.v3"
-	"log/slog"
+	"log"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %s", err)
-	}
-
 	cfg.InitLogger()
-
-	opts := &slog.HandlerOptions{AddSource: true, Level: slog.LevelDebug}
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
-	slog.SetDefault(logger)
 
 	slog.Info("starting...")
 	defer slog.Info("finished")
@@ -32,41 +22,33 @@ func main() {
 	config := cfg.New()
 	ctx := context.Background()
 
-	slog.Info("Initializing PostgreSQL connection")
 	pg, err := postgres.New(ctx, config.Dsn)
 	if err != nil {
-		log.Fatalf("error connection to db: %s", err)
+		log.Fatalf("error connection to db: %s\n", err)
 	}
-	slog.Info("Connected to PostgreSQL")
 
 	h := handler.New(pg, config)
 	if err != nil {
-		log.Fatalf("error create handler: %s", err)
+		log.Fatalf("error create handler: %s\n", err)
 	}
 
-	optsTele := tele.Settings{
+	opts := tele.Settings{
 		Token:  config.Token,
 		Poller: &tele.LongPoller{Timeout: internal.Timeout},
 	}
 
-	bot, err := tele.NewBot(optsTele)
+	bot, err := tele.NewBot(opts)
 	if err != nil {
-		log.Fatalf("error create bot instance: %s", err)
+		log.Fatalf("error create bot instance: %s\n", err)
 	}
-	slog.Info("Bot instance created")
 
 	// getting information about profiles
 	uniqUserIds := map[int64]struct{}{}
 	for _, chatId := range config.AllowedChats {
-		// Convert old group ID to supergroup ID if needed
-		if chatId > 0 {
-			chatId = -1000000000000 + chatId
-		}
-
-		slog.Debug("Fetching profile IDs for chat", "chatId", chatId)
 		profileIds, err := pg.GetProfileIdsByChatId(ctx, chatId)
 		if err != nil {
-			slog.Warn("failed to get profile ids for chat", "chatId", chatId, "error", err)
+			slog.Error("failed to get profile ids for chat",
+				slog.Any("chat", chatId), slog.Any("error", err))
 			continue
 		}
 
@@ -79,21 +61,22 @@ func main() {
 
 			profile, err := bot.ChatMemberOf(tele.ChatID(chatId), &tele.User{ID: id})
 			if err != nil {
-				slog.Warn("failed to get profile info for id", "id", id, "error", err)
+				slog.Error("failed to get profile info for id",
+					slog.Any("id", id), slog.Any("error", err))
 				continue
 			}
 
 			p := model.NewProfile(profile.User)
 			if err := pg.StoreProfile(ctx, p); err != nil {
-				slog.Warn("failed to store profile with id", "id", profile.User.ID, "error", err)
-			} else {
-				slog.Debug("Stored profile with id", "id", profile.User.ID)
+				slog.Error("failed to store profile with id",
+					slog.Any("id", profile.User.ID), slog.Any("error", err))
 			}
 		}
 	}
 	uniqUserIds = nil
 
 	// Commands handlers
+	// Should not handle anything except commands in private messages
 	bot.Handle(internal.HelpCmd, h.Help)
 	bot.Handle(internal.HCmd, h.Help)
 	bot.Handle(internal.StartCmd, h.Help)
