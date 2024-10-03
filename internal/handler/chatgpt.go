@@ -1,5 +1,9 @@
 package handler
 
+//**
+// CURRENTLY DISABLED FUNCTIONALITY
+//**
+
 import (
 	"bytes"
 	"encoding/json"
