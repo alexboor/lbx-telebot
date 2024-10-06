@@ -256,30 +256,3 @@ func TestHandlerMeteoalarmExtractAlerts_DayOne(t *testing.T) {
 	}
 
 }
-
-//func TestNormScriptContent_EmptyString(t *testing.T) {
-//	input := ""
-//	expected := ""
-//	result := normScriptContent(input)
-//	if result != expected {
-//		t.Errorf("expected %s, got %s", expected, result)
-//	}
-//}
-//
-//func TestNormScriptContent_OnlyWhitespacesAndNewlines(t *testing.T) {
-//	input := " \n \n "
-//	expected := ""
-//	result := normScriptContent(input)
-//	if result != expected {
-//		t.Errorf("expected %s, got %s", expected, result)
-//	}
-//}
-//
-//func TestNormScriptContent_NoWhitespacesOrNewlines(t *testing.T) {
-//	input := "varbgGreen=\"#78ff47\";varbgYellow=\"#fbff79\";"
-//	expected := "varbgGreen=\"#78ff47\";varbgYellow=\"#fbff79\";"
-//	result := normScriptContent(input)
-//	if result != expected {
-//		t.Errorf("expected %s, got %s", expected, result)
-//	}
-//}
