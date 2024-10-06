@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"github.com/alexboor/lbx-telebot/internal/scheduler"
+	"github.com/alexboor/lbx-telebot/internal/storage/memory"
 	"log/slog"
 
 	"github.com/alexboor/lbx-telebot/internal"
@@ -27,7 +29,9 @@ func main() {
 		log.Fatalf("error connection to db: %s\n", err)
 	}
 
-	h := handler.New(pg, config)
+	mem := memory.New()
+
+	h := handler.New(pg, mem, config)
 	if err != nil {
 		log.Fatalf("error create handler: %s\n", err)
 	}
@@ -41,6 +45,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("error create bot instance: %s\n", err)
 	}
+
+	// Scheduler initialization
+	//   Passing inside storages, config and bot instance to be able to use them in scheduled tasks
+	//   Maybe it's better to make a shared common chan for all tasks to communicate with bot
+	//   Leaving it as TODO for now
+	sch, err := scheduler.New(pg, mem, config, bot)
+	if err != nil {
+		log.Fatalf("error create scheduler: %s\n", err)
+	}
+	sch.Start()
 
 	// getting information about profiles
 	uniqUserIds := map[int64]struct{}{}
