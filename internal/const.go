@@ -22,4 +22,5 @@ const (
 	TopicCmd   = "/topic"
 	EventCmd   = "/event"
 	TodayCmd   = "/today"
+	MeteoAlarm = "/meteoalarm"
 )
