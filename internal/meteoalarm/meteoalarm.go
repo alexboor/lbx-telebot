@@ -3,7 +3,6 @@ package meteoalarm
 import (
 	"crypto/tls"
 	"fmt"
-	tele "gopkg.in/telebot.v3"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -18,40 +17,41 @@ type Alert struct {
 	Text   string
 }
 
-func MeteoAlarm(c tele.Context) error {
-
-	fmt.Println("got /meteoalarm")
-
-	c.Reply("ok")
-
+func Extract() ([]Alert, []Alert, error) {
 	page, err := getRawHTML(meteoalarmURL)
 	if err != nil {
 		fmt.Errorf("error getting content: %s\n", err)
-		return err
+		return nil, nil, err
 	}
 
 	scripts, err := extractScriptContent(page)
 	if err != nil {
 		fmt.Errorf("error extract script content: %s\n", err)
-		return err
+		return nil, nil, err
 	}
 
-	for _, s := range scripts {
-		fmt.Println(isToday(s))
+	var today []Alert
+	var tomorrow []Alert
 
+	for _, s := range scripts {
 		norm := normScriptContent(s)
 		data := removeUselessLines(norm)
 
+		t := isToday(s)
 		for _, l := range strings.Split(data, "\n") {
 			alert := extractAlert(l)
-			fmt.Println(alert)
+			if len(alert.Region) == 3 {
+				if t {
+					today = append(today, alert)
+				} else {
+					tomorrow = append(tomorrow, alert)
+				}
+			}
+
 		}
-
-		println("----")
-
 	}
 
-	return nil
+	return today, tomorrow, nil
 }
 
 func getRawHTML(url string) (string, error) {

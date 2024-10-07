@@ -8,6 +8,7 @@ import (
 	"github.com/alexboor/lbx-telebot/internal/storage/memory"
 	"github.com/go-co-op/gocron/v2"
 	"gopkg.in/telebot.v3"
+	"time"
 )
 
 type Schedule struct {
@@ -41,6 +42,9 @@ func New(storage storage.Storage, mem *memory.InMemoryStorage, cfg *cfg.Cfg, bot
 	// See examples.go for details
 	//
 	//_, err = cronScheduler.NewJob(gocron.DurationJob(5*time.Second), gocron.NewTask(s.InMemoryStorageExample))
+
+	_, err = cronScheduler.NewJob(gocron.DurationJob(10*time.Minute), gocron.NewTask(s.MeteoalarmTask))
+	s.MeteoalarmTask()
 
 	return s, nil
 }
