@@ -3,6 +3,7 @@ package scheduler
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/alexboor/lbx-telebot/internal"
 	"github.com/alexboor/lbx-telebot/internal/meteoalarm"
 )
 
@@ -20,7 +21,7 @@ func (s *Schedule) MeteoalarmTask() {
 		return
 	}
 
-	s.Memory.Set("meteoalarm_today", todayJSON)
+	s.Memory.Set(internal.MemkeyMeteoalarmToday, todayJSON)
 
 	tomorrowJSON, err := json.Marshal(tomorrow)
 	if err != nil {
@@ -28,7 +29,7 @@ func (s *Schedule) MeteoalarmTask() {
 		return
 	}
 
-	s.Memory.Set("meteoalarm_tomorrow", tomorrowJSON)
+	s.Memory.Set(internal.MemkeyMeteoalarmTomorrow, tomorrowJSON)
 
 	return
 }

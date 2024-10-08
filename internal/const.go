@@ -24,3 +24,8 @@ const (
 	TodayCmd   = "/today"
 	MeteoAlarm = "/meteoalarm"
 )
+
+const (
+	MemkeyMeteoalarmToday    = "meteoalarm_today"
+	MemkeyMeteoalarmTomorrow = "meteoalarm_tomorrow"
+)
