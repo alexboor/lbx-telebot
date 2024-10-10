@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/alexboor/lbx-telebot/internal"
+	"github.com/alexboor/lbx-telebot/internal/message"
+	"github.com/alexboor/lbx-telebot/internal/meteoalarm"
 	tele "gopkg.in/telebot.v3"
-	"strings"
 )
 
 func (h Handler) MeteoAlarm(c tele.Context) error {
@@ -21,28 +23,44 @@ func (h Handler) MeteoAlarm(c tele.Context) error {
 		return nil
 	}
 
-	var today strings.Builder
-	today.WriteString("Weather alert for today: ")
+	var today []meteoalarm.Alert
+	var tomorrow []meteoalarm.Alert
 
 	if alertTodayBytes, ok := alertToday.([]byte); ok {
-		today.Write(alertTodayBytes)
+		if err := json.Unmarshal(alertTodayBytes, &today); err != nil {
+			fmt.Printf("error unmarshalling today data: %s\n", err)
+			return nil
+		}
 	} else {
 		fmt.Println("Invalid data type for alertToday")
 		return nil
 	}
 
-	var tomorrow strings.Builder
-	tomorrow.WriteString("Weather alert for tomorrow: ")
-
 	if alertTomorrowBytes, ok := alertTomorrow.([]byte); ok {
-		tomorrow.Write(alertTomorrowBytes)
+		if err := json.Unmarshal(alertTomorrowBytes, &tomorrow); err != nil {
+			fmt.Printf("error unmarshalling tomorrow data: %s\n", err)
+			return nil
+		}
 	} else {
 		fmt.Println("Invalid data type for alertTomorrow")
 		return nil
 	}
 
-	c.Reply(today.String())
-	c.Reply(tomorrow.String())
+	d0, d0alarm, d1, d1alarm := message.GetMeteoAlarm(today, tomorrow)
+
+	if d0alarm {
+		_, err := c.Bot().Send(c.Sender(), d0, internal.MarkdownOpt)
+		if err != nil {
+			return err
+		}
+	}
+
+	if d1alarm {
+		_, err := c.Bot().Send(c.Sender(), d1, internal.MarkdownOpt)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

@@ -17,6 +17,12 @@ type Alert struct {
 	Text   string
 }
 
+var Regions = map[string]string{
+	"001": "Continental and Mountains",
+	"002": "Central",
+	"003": "Adriatic coast",
+}
+
 func Extract() ([]Alert, []Alert, error) {
 	page, err := getRawHTML(meteoalarmURL)
 	if err != nil {
