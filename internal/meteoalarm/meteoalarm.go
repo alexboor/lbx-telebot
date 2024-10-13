@@ -3,7 +3,7 @@ package meteoalarm
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -17,23 +17,21 @@ type Alert struct {
 	Text   string
 }
 
-var Regions = map[string]string{
-	"001": "Continental and Mountains",
-	"002": "Central",
-	"003": "Adriatic coast",
-}
+//var Regions = map[string]string{
+//	"001": "Continental and Mountains",
+//	"002": "Central",
+//	"003": "Adriatic coast",
+//}
 
 func Extract() ([]Alert, []Alert, error) {
 	page, err := getRawHTML(meteoalarmURL)
 	if err != nil {
-		fmt.Errorf("error getting content: %s\n", err)
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("error getting content: %s\n", err)
 	}
 
 	scripts, err := extractScriptContent(page)
 	if err != nil {
-		fmt.Errorf("error extract script content: %s\n", err)
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("error extract script content: %s\n", err)
 	}
 
 	var today []Alert
@@ -73,9 +71,14 @@ func getRawHTML(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Printf("error closing body: %s\n", err)
+		}
+	}(resp.Body)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -161,7 +164,7 @@ func removeUselessLines(s string) string {
 func extractAlert(s string) Alert {
 	var alert Alert
 
-	re := regexp.MustCompile(`getElementById\(.+-(\d\d\d)"\).innerHTML.+color:\s(.+);\\"><\/i>(.+)<\/li>";`)
+	re := regexp.MustCompile(`getElementById\(.+-(\d\d\d)"\).innerHTML.+color:\s(.+);\\"></i>(.+)</li>";`)
 	matches := re.FindStringSubmatch(s)
 	if len(matches) > 3 {
 		alert = Alert{
