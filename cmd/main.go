@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
+	"github.com/alexboor/lbx-telebot/internal/scheduler"
+	"github.com/alexboor/lbx-telebot/internal/storage/memory"
 	"log/slog"
 
 	"github.com/alexboor/lbx-telebot/internal"
@@ -11,6 +12,7 @@ import (
 	"github.com/alexboor/lbx-telebot/internal/model"
 	"github.com/alexboor/lbx-telebot/internal/storage/postgres"
 	tele "gopkg.in/telebot.v3"
+	"log"
 )
 
 func main() {
@@ -27,7 +29,9 @@ func main() {
 		log.Fatalf("error connection to db: %s\n", err)
 	}
 
-	h := handler.New(pg, config)
+	mem := memory.New()
+
+	h := handler.New(pg, mem, config)
 	if err != nil {
 		log.Fatalf("error create handler: %s\n", err)
 	}
@@ -41,6 +45,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("error create bot instance: %s\n", err)
 	}
+
+	// Scheduler initialization
+	//   Passing inside storages, config and bot instance to be able to use them in scheduled tasks
+	//   Maybe it's better to make a shared common chan for all tasks to communicate with bot
+	//   Leaving it as TODO for now
+	sch, err := scheduler.New(pg, mem, config, bot)
+	if err != nil {
+		log.Fatalf("error create scheduler: %s\n", err)
+	}
+	sch.Start()
 
 	// getting information about profiles
 	uniqUserIds := map[int64]struct{}{}
@@ -89,6 +103,7 @@ func main() {
 	bot.Handle(internal.TopicCmd, h.SetTopic)
 	bot.Handle(internal.EventCmd, h.EventCmd)
 	bot.Handle(internal.TodayCmd, h.TodayCmd)
+	bot.Handle(internal.MeteoAlarm, h.MeteoAlarm)
 
 	// Button handlers
 	bot.Handle("\f"+internal.ShareBtn, h.EventCallback)
@@ -96,6 +111,7 @@ func main() {
 	// Handle only messages in allowed groups (msg.Chat.Type = "group" | "supergroup")
 	// private messages handles only by command endpoint handler
 	bot.Handle(tele.OnText, h.Count)
+	//bot.Handle(tele.OnText, h.HandleChatGPT)
 	bot.Handle(tele.OnAudio, h.Count)
 	bot.Handle(tele.OnVideo, h.Count)
 	bot.Handle(tele.OnAnimation, h.Count)

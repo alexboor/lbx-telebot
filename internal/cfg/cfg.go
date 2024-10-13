@@ -10,6 +10,7 @@ import (
 
 type Cfg struct {
 	Token        string
+	ChatGPTToken string
 	AllowedChats []int64
 	Dsn          string
 }
@@ -18,6 +19,7 @@ type Cfg struct {
 func New() *Cfg {
 	return &Cfg{
 		Token:        os.Getenv("TELEGRAM_BOT_TOKEN"),
+		ChatGPTToken: os.Getenv("CHATGPT_TOKEN"),
 		AllowedChats: initAllowedChats(),
 		Dsn:          initDsn(),
 	}
