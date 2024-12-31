@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+
 	"github.com/alexboor/lbx-telebot/internal/model"
 )
 
