@@ -32,9 +32,6 @@ func main() {
 	mem := memory.New()
 
 	h := handler.New(pg, mem, config)
-	if err != nil {
-		log.Fatalf("error create handler: %s\n", err)
-	}
 
 	opts := tele.Settings{
 		Token:  config.Token,
