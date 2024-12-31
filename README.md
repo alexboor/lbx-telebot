@@ -47,6 +47,11 @@ Command for event. Send command without params for detailed instructions.
 
 Returns what happened on this day
 
+`/newyear` _TIMEZONE_
+Returns time left until the new year
+Options:
+_TIMEZONE_ - custom timezone. E.g `Europe/Podgorica`
+
 ---
 
 `/event` create _NAME_

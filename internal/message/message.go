@@ -2,11 +2,12 @@ package message
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/alexboor/lbx-telebot/internal"
 	"github.com/alexboor/lbx-telebot/internal/wikimedia"
 	"gopkg.in/telebot.v3"
-	"strconv"
-	"strings"
 
 	"github.com/alexboor/lbx-telebot/internal/model"
 )
@@ -48,6 +49,11 @@ Command for event. Send command without params for detailed instructions.
 
 */today*
 Returns what happened on this day
+
+*/newyear* _TIMEZONE_
+Returns time left until the new year
+Options:
+_TIMEZONE_ - custom timezone. E.g Europe/Podgorica
 
 I live here: https://github.com/alexboor/lbx-telebot
 `

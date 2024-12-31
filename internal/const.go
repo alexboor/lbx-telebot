@@ -23,6 +23,7 @@ const (
 	EventCmd   = "/event"
 	TodayCmd   = "/today"
 	MeteoAlarm = "/meteoalarm"
+	NewYearCmd = "/newyear"
 )
 
 const (
