@@ -15,21 +15,18 @@ func (h Handler) NewYearCmd(c tele.Context) error {
 		return nil
 	}
 
-	var (
-		location = time.Now().Location()
-		err      error
-	)
-	if len(msg.Payload) != 0 {
-		location, err = time.LoadLocation(msg.Payload)
-		if err != nil {
-			m := fmt.Sprintf("I don't know %s timezone. Try another.\nFor example Europe/Podgorica", msg.Payload)
-			return c.Send(m)
-		}
+	if len(msg.Payload) == 0 {
+		msg.Payload = "Europe/Podgorica"
+	}
+	location, err := time.LoadLocation(msg.Payload)
+	if err != nil {
+		m := fmt.Sprintf("I don't know %s timezone. Try another.\nFor example Europe/Podgorica", msg.Payload)
+		return c.Send(m)
 	}
 
 	now := time.Now().UTC().In(location)
 	newYearTime := time.Date(now.Year()+1, 1, 1, 0, 0, 0, 0, location)
 
-	m := fmt.Sprintf("Your new year will be in %v", newYearTime.Sub(now))
+	m := fmt.Sprintf("New Year in %v will be in %v", location, newYearTime.Sub(now).Round(time.Second))
 	return c.Send(m)
 }
