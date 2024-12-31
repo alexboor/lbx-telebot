@@ -2,17 +2,17 @@ package main
 
 import (
 	"context"
-	"github.com/alexboor/lbx-telebot/internal/scheduler"
-	"github.com/alexboor/lbx-telebot/internal/storage/memory"
+	"log"
 	"log/slog"
 
 	"github.com/alexboor/lbx-telebot/internal"
 	"github.com/alexboor/lbx-telebot/internal/cfg"
 	"github.com/alexboor/lbx-telebot/internal/handler"
 	"github.com/alexboor/lbx-telebot/internal/model"
+	"github.com/alexboor/lbx-telebot/internal/scheduler"
+	"github.com/alexboor/lbx-telebot/internal/storage/memory"
 	"github.com/alexboor/lbx-telebot/internal/storage/postgres"
 	tele "gopkg.in/telebot.v3"
-	"log"
 )
 
 func main() {
@@ -104,6 +104,7 @@ func main() {
 	bot.Handle(internal.EventCmd, h.EventCmd)
 	bot.Handle(internal.TodayCmd, h.TodayCmd)
 	bot.Handle(internal.MeteoAlarm, h.MeteoAlarm)
+	bot.Handle(internal.NewYearCmd, h.NewYearCmd)
 
 	// Button handlers
 	bot.Handle("\f"+internal.ShareBtn, h.EventCallback)
@@ -111,7 +112,7 @@ func main() {
 	// Handle only messages in allowed groups (msg.Chat.Type = "group" | "supergroup")
 	// private messages handles only by command endpoint handler
 	bot.Handle(tele.OnText, h.Count)
-	//bot.Handle(tele.OnText, h.HandleChatGPT)
+	// bot.Handle(tele.OnText, h.HandleChatGPT)
 	bot.Handle(tele.OnAudio, h.Count)
 	bot.Handle(tele.OnVideo, h.Count)
 	bot.Handle(tele.OnAnimation, h.Count)
