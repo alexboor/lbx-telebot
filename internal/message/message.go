@@ -50,10 +50,10 @@ Command for event. Send command without params for detailed instructions.
 */today*
 Returns what happened on this day
 
-*/newyear* _text_
+*/newyear* _TIMEZONE_
 Returns time left until the new year
 Options:
-	_text_ - custom timezone. E.g Europe/Podgorica
+_TIMEZONE_ - custom timezone. E.g Europe/Podgorica
 
 I live here: https://github.com/alexboor/lbx-telebot
 `
