@@ -102,6 +102,7 @@ func main() {
 	bot.Handle(internal.TodayCmd, h.TodayCmd)
 	bot.Handle(internal.MeteoAlarm, h.MeteoAlarm)
 	bot.Handle(internal.NewYearCmd, h.NewYearCmd)
+	bot.Handle(internal.ScoreCmd, h.Score)
 
 	// Button handlers
 	bot.Handle("\f"+internal.ShareBtn, h.EventCallback)
