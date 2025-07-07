@@ -25,4 +25,9 @@ type Storage interface {
 	GetAllEvents(ctx context.Context, all bool) ([]model.Event, error)
 	StoreBet(ctx context.Context, event model.Event, userId int64) error
 	RemoveBet(ctx context.Context, event model.Event, userId int64) error
+	GetAllIds(ctx context.Context, chatId int64) ([]int64, error)
+	GetAllCountsByUser(ctx context.Context, chatId int64, userId int64) ([]model.DateCount, error)
+	StoreScore(ctx context.Context, user int64, score int) error
+	GetAllScores(ctx context.Context) ([]model.ProfileWithScore, error)
+	GetScore(ctx context.Context, user int64) (int, error)
 }

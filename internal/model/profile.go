@@ -1,8 +1,10 @@
 package model
 
 import (
-	"gopkg.in/telebot.v3"
 	"strings"
+	"time"
+
+	"gopkg.in/telebot.v3"
 )
 
 type Profile struct {
@@ -12,6 +14,12 @@ type Profile struct {
 	UserName  string
 	Position  int
 	Count     Count
+}
+
+type ProfileWithScore struct {
+	Profile
+	Score      int
+	LastUpdate time.Time
 }
 
 // NewProfile creates new Profile by given id, username, first name and last name

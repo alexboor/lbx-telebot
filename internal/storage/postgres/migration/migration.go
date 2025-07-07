@@ -4,4 +4,5 @@ var Migrations = []string{
 	profile,
 	event, eventParticipant,
 	count, countMessages,
+	score,
 }

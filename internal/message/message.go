@@ -326,3 +326,12 @@ func getName(profile model.Profile) string {
 
 	return name
 }
+
+// GetScores returns message with scores for given profiles
+func GetScores(scores []model.ProfileWithScore) string {
+	var result strings.Builder
+	for i, score := range scores {
+		result.WriteString(fmt.Sprintf("%v. %v: %v\n", i+1, getName(score.Profile), score.Score))
+	}
+	return result.String()
+}

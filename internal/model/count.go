@@ -1,6 +1,9 @@
 package model
 
-import "math"
+import (
+	"math"
+	"time"
+)
 
 type Count struct {
 	Word    int
@@ -10,6 +13,11 @@ type Count struct {
 	Sticker int
 	Message int
 	Total   int
+}
+
+type DateCount struct {
+	Date  time.Time
+	Count Count
 }
 
 func (c Count) GetAvgStatistic() float64 {
