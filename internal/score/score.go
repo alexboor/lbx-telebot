@@ -5,11 +5,25 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/alexboor/lbx-telebot/internal/message"
 	"github.com/alexboor/lbx-telebot/internal/model"
 	"github.com/alexboor/lbx-telebot/internal/storage"
 )
 
-func CalculateAllScore(s storage.Storage) {
+// ShowScore shows a scoreboard with 10 top users ordered by score descending
+func ShowScores10(s storage.Storage) string {
+	ctx := context.Background()
+	scores, err := s.GetAllScores(ctx)
+	if err != nil {
+		fmt.Printf("Error getting scoreboard: %v", err)
+		return "Opps, something wrong"
+	}
+
+	return message.GetScores(scores[:10])
+}
+
+// CalculateAllScore recalculates all score for all users in the group
+func CalculateAllScore(s storage.Storage) string {
 
 	fmt.Println("Calculating all score")
 
@@ -20,6 +34,11 @@ func CalculateAllScore(s storage.Storage) {
 		fmt.Println("Error getting all ids", err)
 	}
 
+	var (
+		inserted int
+		errors   int
+	)
+
 	for _, user := range users {
 		counts, err := s.GetAllCountsByUser(ctx, -1001328533803, user)
 		if err != nil {
@@ -28,9 +47,14 @@ func CalculateAllScore(s storage.Storage) {
 
 		score := calculateScore(counts)
 
-		fmt.Println(user, score)
+		if err := s.StoreScore(ctx, user, score); err != nil {
+			errors++
+		} else {
+			inserted++
+		}
 	}
 
+	return fmt.Sprintf("Inserted: %d, Errors: %d", inserted, errors)
 }
 
 // calculateScore calculates the score for a user by given stats

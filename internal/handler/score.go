@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"strings"
+
 	"github.com/alexboor/lbx-telebot/internal/score"
 	tele "gopkg.in/telebot.v3"
 )
@@ -12,7 +14,22 @@ func (h Handler) Score(c tele.Context) error {
 		return nil
 	}
 
-	score.CalculateAllScore(h.Storage)
+	parts := strings.Split(msg.Payload, " ")
+	subcmd := parts[0]
+	//subPayload := parts[1:]
+
+	if len(parts) == 0 {
+
+	}
+
+	switch subcmd {
+	case "recalculate":
+		c.Send(score.CalculateAllScore(h.Storage))
+	default:
+		c.Send(score.ShowScores10(h.Storage))
+	}
+
+	//score.CalculateAllScore(h.Storage)
 
 	return nil
 }
