@@ -23,13 +23,13 @@ func ShowScores10(s storage.Storage) string {
 }
 
 // CalculateAllScore recalculates all score for all users in the group
-func CalculateAllScore(s storage.Storage) string {
+func CalculateAllScore(s storage.Storage, chat int64) string {
 
 	fmt.Println("Calculating all score")
 
 	ctx := context.Background()
 
-	users, err := s.GetAllIds(ctx, -1001328533803) //TODO: get chat id from config
+	users, err := s.GetAllIds(ctx, chat)
 	if err != nil {
 		fmt.Println("Error getting all ids", err)
 	}

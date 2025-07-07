@@ -9,19 +9,21 @@ import (
 )
 
 type Cfg struct {
-	Token        string
-	ChatGPTToken string
-	AllowedChats []int64
-	Dsn          string
+	Token           string
+	ChatGPTToken    string
+	AllowedChats    []int64
+	Dsn             string
+	ScoreTargetChat int64
 }
 
 // New creates new app config
 func New() *Cfg {
 	return &Cfg{
-		Token:        os.Getenv("TELEGRAM_BOT_TOKEN"),
-		ChatGPTToken: os.Getenv("CHATGPT_TOKEN"),
-		AllowedChats: initAllowedChats(),
-		Dsn:          initDsn(),
+		Token:           os.Getenv("TELEGRAM_BOT_TOKEN"),
+		ChatGPTToken:    os.Getenv("CHATGPT_TOKEN"),
+		AllowedChats:    initAllowedChats(),
+		Dsn:             initDsn(),
+		ScoreTargetChat: initScoreTargetChat(),
 	}
 }
 
@@ -60,4 +62,17 @@ func initDsn() string {
 		os.Getenv("DB_NAME"),
 	)
 	return dsn
+}
+
+func initScoreTargetChat() int64 {
+	scoreTargetChatEnv := os.Getenv("SCORE_TARGET_CHAT")
+	if scoreTargetChatEnv == "" {
+		return 0
+	}
+	id, err := strconv.ParseInt(scoreTargetChatEnv, 10, 64)
+	if err != nil {
+		slog.Warn("failed to parse SCORE_TARGET_CHAT env", slog.Any("error", err))
+		return 0
+	}
+	return id
 }

@@ -24,7 +24,7 @@ func (h Handler) Score(c tele.Context) error {
 
 	switch subcmd {
 	case "recalculate":
-		c.Send(score.CalculateAllScore(h.Storage))
+		c.Send(score.CalculateAllScore(h.Storage, h.Config.ScoreTargetChat))
 	default:
 		c.Send(score.ShowScores10(h.Storage))
 	}
