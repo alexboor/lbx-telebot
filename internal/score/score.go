@@ -122,11 +122,10 @@ func calculateScore(counts []model.DateCount) int {
 
 func CleanupProfile(s storage.Storage, targetChat int64, c tele.Context) string {
 	ctx := context.Background()
-	incomingChat := c.Chat().ID
 
-	fmt.Printf("Current chat ID: %d\n", incomingChat)
+	fmt.Printf("Current target chat ID: %d\n", targetChat)
 
-	participants, err := s.GetProfileIdsByChatId(ctx, incomingChat)
+	participants, err := s.GetProfileIdsByChatId(ctx, targetChat)
 	if err != nil {
 		return fmt.Sprintf("Failed to get participants: %v", err)
 	}
