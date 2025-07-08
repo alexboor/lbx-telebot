@@ -52,3 +52,13 @@ func (s *Storage) GetScore(ctx context.Context, user int64) (int, error) {
 
 	return profile.Score, nil
 }
+
+// RemoveScoreByUserId removes score by given user id
+func (s *Storage) RemoveScoreByUserId(ctx context.Context, userId int64) error {
+	query := `
+delete from score
+where user_id = $1`
+
+	_, err := s.Pool.Exec(ctx, query, userId)
+	return err
+}

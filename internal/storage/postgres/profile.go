@@ -284,3 +284,13 @@ where id in (select distinct user_id
 	err := s.Pool.QueryRow(ctx, query, chatId).Scan(&cnt)
 	return cnt, err
 }
+
+// RemoveProfileByUserId removes profile by given user id
+func (s *Storage) RemoveProfileByUserId(ctx context.Context, userId int64) error {
+	query := `
+delete from profile
+where id = $1`
+
+	_, err := s.Pool.Exec(ctx, query, userId)
+	return err
+}
