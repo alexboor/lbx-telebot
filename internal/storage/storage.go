@@ -15,6 +15,7 @@ type Storage interface {
 	GetProfileStatisticByName(ctx context.Context, chatId int64, opt model.Option) (model.Profile, error)
 	GetProfileStatisticById(ctx context.Context, id, chatId int64, opt model.Option) (model.Profile, error)
 	GetProfileIdsByChatId(ctx context.Context, chatId int64) ([]int64, error)
+	RemoveProfileByUserId(ctx context.Context, userId int64) error
 	GetEventByName(ctx context.Context, name string) (model.Event, error)
 	GetEventWithWinnersByName(ctx context.Context, name string) (model.Event, error)
 	CreateNewEvent(ctx context.Context, event model.Event) error
@@ -30,4 +31,5 @@ type Storage interface {
 	StoreScore(ctx context.Context, user int64, score int) error
 	GetAllScores(ctx context.Context) ([]model.ProfileWithScore, error)
 	GetScore(ctx context.Context, user int64) (int, error)
+	RemoveScoreByUserId(ctx context.Context, userId int64) error
 }

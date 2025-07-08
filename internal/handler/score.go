@@ -26,7 +26,7 @@ func (h Handler) Score(c tele.Context) error {
 	case "recalculate":
 		c.Send(score.CalculateAllScore(h.Storage, h.Config.ScoreTargetChat))
 	case "cleanup":
-		score.CleanupProfile(h.Storage, h.Config.ScoreTargetChat, c)
+		score.CleanupProfile(h.Storage, h.Config.ScoreTargetChat, c.Bot())
 	default:
 		c.Send(score.ShowScores10(h.Storage))
 	}

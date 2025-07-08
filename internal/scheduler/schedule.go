@@ -3,12 +3,13 @@
 package scheduler
 
 import (
+	"time"
+
 	"github.com/alexboor/lbx-telebot/internal/cfg"
 	"github.com/alexboor/lbx-telebot/internal/storage"
 	"github.com/alexboor/lbx-telebot/internal/storage/memory"
 	"github.com/go-co-op/gocron/v2"
 	"gopkg.in/telebot.v3"
-	"time"
 )
 
 type Schedule struct {
@@ -43,8 +44,18 @@ func New(storage storage.Storage, mem *memory.InMemoryStorage, cfg *cfg.Cfg, bot
 	//
 	//_, err = cronScheduler.NewJob(gocron.DurationJob(5*time.Second), gocron.NewTask(s.InMemoryStorageExample))
 
-	_, err = cronScheduler.NewJob(gocron.DurationJob(10*time.Minute), gocron.NewTask(s.MeteoalarmTask))
+	if _, err = cronScheduler.NewJob(gocron.DurationJob(10*time.Minute), gocron.NewTask(s.MeteoalarmTask)); err != nil {
+		return nil, err
+	}
 	s.MeteoalarmTask()
+
+	if _, err = cronScheduler.NewJob(gocron.CronJob("0 0 * * *", false), gocron.NewTask(s.CleanupProfile)); err != nil {
+		return nil, err
+	}
+
+	if _, err = cronScheduler.NewJob(gocron.CronJob("15 0 * * *", false), gocron.NewTask(s.RecalculateScore)); err != nil {
+		return nil, err
+	}
 
 	return s, nil
 }

@@ -3,6 +3,7 @@ package score
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/alexboor/lbx-telebot/internal/message"
@@ -120,23 +121,32 @@ func calculateScore(counts []model.DateCount) int {
 	return totalScore
 }
 
-func CleanupProfile(s storage.Storage, targetChat int64, c tele.Context) string {
+func CleanupProfile(s storage.Storage, targetChat int64, bot *tele.Bot) string {
 	ctx := context.Background()
 
 	fmt.Printf("Current target chat ID: %d\n", targetChat)
 
 	participants, err := s.GetProfileIdsByChatId(ctx, targetChat)
 	if err != nil {
-		return fmt.Sprintf("Failed to get participants: %v", err)
+		slog.Error("failed to get participants", slog.Any("error", err))
+		return "failed to get participants"
 	}
 
+	var removed int
+
 	for _, p := range participants {
-		_, err := c.Bot().ChatMemberOf(tele.ChatID(targetChat), &tele.User{ID: p})
+		_, err := bot.ChatMemberOf(tele.ChatID(targetChat), &tele.User{ID: p})
 		if err != nil {
-			c.Send(fmt.Sprintf("to be deleted: %d", p))
+			if err := s.RemoveProfileByUserId(ctx, p); err != nil {
+				slog.Error("failed to remove profile", slog.Any("id", p), slog.Any("error", err))
+			}
+			if err := s.RemoveScoreByUserId(ctx, p); err != nil {
+				slog.Error("failed to remove score", slog.Any("id", p), slog.Any("error", err))
+			}
+			removed++
 			continue
 		}
 	}
 
-	return ""
+	return fmt.Sprintf("removed %d profiles", removed)
 }
