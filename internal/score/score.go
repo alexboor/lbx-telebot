@@ -8,6 +8,7 @@ import (
 	"github.com/alexboor/lbx-telebot/internal/message"
 	"github.com/alexboor/lbx-telebot/internal/model"
 	"github.com/alexboor/lbx-telebot/internal/storage"
+	tele "gopkg.in/telebot.v3"
 )
 
 // ShowScore shows a scoreboard with 10 top users ordered by score descending
@@ -40,7 +41,7 @@ func CalculateAllScore(s storage.Storage, chat int64) string {
 	)
 
 	for _, user := range users {
-		counts, err := s.GetAllCountsByUser(ctx, -1001328533803, user)
+		counts, err := s.GetAllCountsByUser(ctx, chat, user)
 		if err != nil {
 			fmt.Println("Error getting all counts by user", err)
 		}
@@ -117,4 +118,26 @@ func calculateScore(counts []model.DateCount) int {
 	}
 
 	return totalScore
+}
+
+func CleanupProfile(s storage.Storage, targetChat int64, c tele.Context) string {
+	ctx := context.Background()
+	incomingChat := c.Chat().ID
+
+	fmt.Printf("Current chat ID: %d\n", incomingChat)
+
+	participants, err := s.GetProfileIdsByChatId(ctx, incomingChat)
+	if err != nil {
+		return fmt.Sprintf("Failed to get participants: %v", err)
+	}
+
+	for _, p := range participants {
+		_, err := c.Bot().ChatMemberOf(tele.ChatID(targetChat), &tele.User{ID: p})
+		if err != nil {
+			c.Send(fmt.Sprintf("to be deleted: %d", p))
+			continue
+		}
+	}
+
+	return ""
 }
