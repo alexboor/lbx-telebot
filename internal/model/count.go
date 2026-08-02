@@ -6,13 +6,14 @@ import (
 )
 
 type Count struct {
-	Word    int
-	Reply   int
-	Forward int
-	Media   int
-	Sticker int
-	Message int
-	Total   int
+	Word             int
+	Reply            int
+	Forward          int
+	Media            int
+	Sticker          int
+	Message          int
+	PositiveReaction int
+	Total            int
 }
 
 type DateCount struct {

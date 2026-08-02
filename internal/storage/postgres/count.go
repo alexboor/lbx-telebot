@@ -10,27 +10,29 @@ import (
 // Count increment messages counter in storage by given value for user in the chat
 func (s *Storage) Count(ctx context.Context, uid, cid int64, dt time.Time, count model.Count) error {
 	query := `
-insert into counting (user_id, chat_id, date, word, reply, forward, media, sticker, message)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+insert into counting (user_id, chat_id, date, word, reply, forward, media, sticker, message, positive_reaction)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 on conflict (user_id, chat_id, date)
-    do update set word    = counting.word + excluded.word,
-                  reply   = counting.reply + excluded.reply,
-                  forward = counting.forward + excluded.forward,
-                  media   = counting.media + excluded.media,
-                  sticker = counting.sticker + excluded.sticker,
-                  message = counting.message + excluded.message`
+    do update set word              = counting.word + excluded.word,
+                  reply             = counting.reply + excluded.reply,
+                  forward           = counting.forward + excluded.forward,
+                  media             = counting.media + excluded.media,
+                  sticker           = counting.sticker + excluded.sticker,
+                  message           = counting.message + excluded.message,
+                  positive_reaction = counting.positive_reaction + excluded.positive_reaction`
 
 	_, err := s.Pool.Exec(
 		ctx, query,
-		uid,           // $1
-		cid,           // $2
-		dt,            // $3
-		count.Word,    // $4
-		count.Reply,   // $5
-		count.Forward, // $6
-		count.Media,   // $7
-		count.Sticker, // $8
-		count.Message, // $9
+		uid,                    // $1
+		cid,                    // $2
+		dt,                     // $3
+		count.Word,             // $4
+		count.Reply,            // $5
+		count.Forward,          // $6
+		count.Media,            // $7
+		count.Sticker,          // $8
+		count.Message,          // $9
+		count.PositiveReaction, // $10
 	)
 	return err
 }
@@ -59,7 +61,7 @@ func (s *Storage) GetAllIds(ctx context.Context, chatId int64) ([]int64, error) 
 
 // GetAllCountsByUser returns all counts for a user in a chat
 func (s *Storage) GetAllCountsByUser(ctx context.Context, chatId int64, userId int64) ([]model.DateCount, error) {
-	query := `select date, word, reply, forward, media, sticker, message 
+	query := `select date, word, reply, forward, media, sticker, message, positive_reaction
 	from counting where chat_id = $1 and user_id = $2 order by date asc`
 
 	rows, err := s.Pool.Query(ctx, query, chatId, userId)
@@ -72,7 +74,7 @@ func (s *Storage) GetAllCountsByUser(ctx context.Context, chatId int64, userId i
 	for rows.Next() {
 		var date time.Time
 		var count model.Count
-		if err := rows.Scan(&date, &count.Word, &count.Reply, &count.Forward, &count.Media, &count.Sticker, &count.Message); err != nil {
+		if err := rows.Scan(&date, &count.Word, &count.Reply, &count.Forward, &count.Media, &count.Sticker, &count.Message, &count.PositiveReaction); err != nil {
 			return nil, err
 		}
 		counts = append(counts, model.DateCount{Date: date, Count: count})

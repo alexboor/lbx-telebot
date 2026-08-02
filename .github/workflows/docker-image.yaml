@@ -58,14 +58,26 @@ jobs:
         shell: bash
         run: echo "echo "release-version=$(echo ${GITHUB_REF:10})" >> $GITHUB_OUTPUT"
 
+      - name: Determine image tag
+        id: image-tag
+        shell: bash
+        run: |
+          # github.ref_name is invalid as a Docker tag for pull_request events
+          # (it's the merge ref, e.g. "43/merge", and tags can't contain "/").
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "value=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and Push
         uses: docker/build-push-action@v4
         with:
           context: .
           push: ${{ github.event.base_ref == 'refs/heads/main' && github.ref_type == 'tag' }}
           name:
-          build-args: VERSION=${{github.ref_name}}
-          tags: boorick/lbx-telebot:${{github.ref_name}}
+          build-args: VERSION=${{ steps.image-tag.outputs.value }}
+          tags: boorick/lbx-telebot:${{ steps.image-tag.outputs.value }}
           labels: ${{ steps.metadata.outputs.labels }}
 
       - name: Deploy to the server

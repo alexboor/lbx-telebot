@@ -5,4 +5,5 @@ var Migrations = []string{
 	event, eventParticipant,
 	count, countMessages,
 	score,
+	messageAuthor, positiveReaction,
 }
