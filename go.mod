@@ -9,7 +9,7 @@ require (
 	github.com/jdkato/prose/v2 v2.0.0
 	github.com/wcharczuk/go-chart/v2 v2.1.1
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
-	gopkg.in/telebot.v3 v3.3.6
+	gopkg.in/telebot.v3 v3.3.8
 )
 
 require (
