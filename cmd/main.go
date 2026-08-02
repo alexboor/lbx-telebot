@@ -9,6 +9,7 @@ import (
 	"github.com/alexboor/lbx-telebot/internal/cfg"
 	"github.com/alexboor/lbx-telebot/internal/handler"
 	"github.com/alexboor/lbx-telebot/internal/model"
+	"github.com/alexboor/lbx-telebot/internal/reaction"
 	"github.com/alexboor/lbx-telebot/internal/scheduler"
 	"github.com/alexboor/lbx-telebot/internal/storage/memory"
 	"github.com/alexboor/lbx-telebot/internal/storage/postgres"
@@ -35,13 +36,17 @@ func main() {
 
 	opts := tele.Settings{
 		Token:  config.Token,
-		Poller: &tele.LongPoller{Timeout: internal.Timeout},
+		Poller: &tele.LongPoller{Timeout: internal.Timeout, AllowedUpdates: tele.AllowedUpdates},
 	}
 
 	bot, err := tele.NewBot(opts)
 	if err != nil {
 		log.Fatalf("error create bot instance: %s\n", err)
 	}
+
+	// Reactions have no handler-registration path in telebot; intercept them at the
+	// poller level instead. See internal/reaction for the credit-awarding logic.
+	bot.Poller = tele.NewMiddlewarePoller(bot.Poller, reaction.Filter(pg, config.AllowedChats))
 
 	// Scheduler initialization
 	//   Passing inside storages, config and bot instance to be able to use them in scheduled tasks

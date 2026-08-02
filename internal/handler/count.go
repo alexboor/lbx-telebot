@@ -64,5 +64,9 @@ func (h Handler) Count(c tele.Context) error {
 		return err
 	}
 
+	if err := h.Storage.StoreMessageAuthor(ctx, msg.Chat.ID, int64(msg.ID), msg.Sender.ID, dt); err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -32,4 +32,6 @@ type Storage interface {
 	GetAllScores(ctx context.Context) ([]model.ProfileWithScore, error)
 	GetScore(ctx context.Context, user int64) (int, error)
 	RemoveScoreByUserId(ctx context.Context, userId int64) error
+	StoreMessageAuthor(ctx context.Context, chatId, messageId, userId int64, messageDate time.Time) error
+	GetMessageAuthor(ctx context.Context, chatId, messageId int64) (int64, time.Time, error)
 }

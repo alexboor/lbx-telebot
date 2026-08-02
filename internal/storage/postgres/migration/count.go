@@ -17,3 +17,7 @@ create table if not exists counting
 const countMessages = `
 alter table counting
     add if not exists message numeric default 0`
+
+const positiveReaction = `
+alter table counting
+    add if not exists positive_reaction numeric default 0`

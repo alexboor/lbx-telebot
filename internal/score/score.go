@@ -21,7 +21,7 @@ func ShowScores10(s storage.Storage) string {
 		return "Opps, something wrong"
 	}
 
-	return message.GetScores(scores[:10])
+	return message.GetScores(scores[:min(10, len(scores))])
 }
 
 // CalculateAllScore recalculates all score for all users in the group
@@ -47,7 +47,7 @@ func CalculateAllScore(s storage.Storage, chat int64) string {
 			fmt.Println("Error getting all counts by user", err)
 		}
 
-		score := calculateScore(counts)
+		score := calculateScore(counts, time.Now())
 
 		if err := s.StoreScore(ctx, user, score); err != nil {
 			errors++
@@ -62,7 +62,7 @@ func CalculateAllScore(s storage.Storage, chat int64) string {
 // calculateScore calculates the score for a user by given stats
 // it recalculates all over all days stored in DB
 // TODO: later add transaction to calculation
-func calculateScore(counts []model.DateCount) int {
+func calculateScore(counts []model.DateCount, now time.Time) int {
 	if len(counts) == 0 {
 		return 0
 	}
@@ -70,6 +70,13 @@ func calculateScore(counts []model.DateCount) int {
 	// Find all days between first and last date
 	firstDate := counts[0].Date
 	lastDate := counts[len(counts)-1].Date
+
+	// A user who stops posting must keep decaying past their last counting row, not
+	// freeze there — extend the penalized window through "today" when that's later.
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, lastDate.Location())
+	if today.After(lastDate) {
+		lastDate = today
+	}
 
 	// Create a map to quickly check if a date exists in counts
 	countsMap := make(map[time.Time]model.Count)
@@ -110,6 +117,9 @@ func calculateScore(counts []model.DateCount) int {
 
 			// 2.5. if user has Count.Media, he gets equal number of points
 			dayScore += count.Media
+
+			// 2.6. if user has Count.PositiveReaction, he gets equal number of points
+			dayScore += count.PositiveReaction
 
 			totalScore += dayScore
 		} else {
